@@ -371,6 +371,9 @@ const swap = (s, a, b) => {
   // boss waves end with the boss: once it's dead its leftover minions are destroyed too
   s = swap(s, 'else n.enemies.some(i=>!i.dead)||(e.state="break"', 'else e.comp.boss&&!n.enemies.some(i=>i.boss&&!i.dead)&&n.enemies.forEach(i=>i.dead||i.custom||yn(n,i,1e9,{silent:!0})),n.enemies.some(i=>!i.dead)||(e.state="break"');
   s = swap(s, "onWaveStart(n,e){S.waveLabel", "onWaveStart(n,e){n<=10&&($ref=null),n===10&&$refAt(S),S.waveLabel");
+  // sharper picture: the bloom composer renders into plain targets (no anti-aliasing), so give them 4x MSAA, and on High
+  // render 1.5x on standard-DPI screens (capped at the preset ratio of 2)
+  s = swap(s, "d=Math.min(window.devicePixelRatio||1,l.q.pixelRatio);t.setPixelRatio(d),t.setSize(c,h,!1),r.setPixelRatio(d),r.setSize(c,h),", "d=Math.min(Math.max(window.devicePixelRatio||1,l.q.pixelRatio>=2?1.5:1),l.q.pixelRatio);t.setPixelRatio(d),t.setSize(c,h,!1),r.setPixelRatio(d),r.setSize(c,h),r.renderTarget1.samples=r.renderTarget2.samples=l.q.bloom?4:0,");
   // dev/cheat menu: only when the game runs from a local file, or in a browser unlocked once with ?dev=<code>
   // (only the code's SHA-256 is in the page; a static site can't truly lock it, but cheats only touch the local save)
   s = swap(s, "document.body.append(dv,tg);", '(async()=>{try{const q=new URLSearchParams(location.search).get("dev");if(q&&crypto.subtle){const h=[...new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(q)))].map(b=>b.toString(16).padStart(2,"0")).join("");if(h==="bed21b3fe237cf8d852c5ba65621e732763e0c7b4232dbb134b19e1e3794f542")localStorage.setItem("vbDev","1");history.replaceState(null,"",location.pathname)}return location.protocol==="file:"||localStorage.getItem("vbDev")==="1"}catch(x){return location.protocol==="file:"}})().then(ok=>ok&&document.body.append(dv,tg));');

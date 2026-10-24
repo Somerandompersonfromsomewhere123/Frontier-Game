@@ -213,8 +213,8 @@ function $pimpact(e, p, x, z) {
 window.$VBfxEnd = (k) => { const m = $mus[k], a = m.list[m.i]; a.currentTime = Math.max(0, a.duration - .3); }; // smoke.js: skip to a track's end
 // run reset (hooked next to the game's own fx.clear): drop wreck chunks, Halo Breaker rings, pops and afterimage clones
 function $fxClear(n) {
-  for (const p of $PB) n.scene.remove(p.$m), p.$m = null;
-  $PB.clear();
+  for (const p of $PBD) n.scene.remove(p.$m), p.$m = null;
+  $PBD.clear();
   for (let i = $Z.length - 1; i >= 0; i--) {
     const z = $Z[i];
     if (z.k === "chunk") n.scene.remove(z.m), $WN--;

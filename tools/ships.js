@@ -432,7 +432,7 @@ function $assimilate(n, M, w) {
 
 // own projectile bodies for the T7 looks, laid over the pool's shared bolt/missile mesh: siege = white-hot capsule in a spinning
 // ring, hunter = glowing arrowhead, hell = pulsing core with a spinning halo, hellsub = small ember dart
-var $PB = new Set();
+var $PBD = new Set();
 function $mkBody(look, c, k) {
   const G = $g3(), g = new Mt(), add = (geo, m, sx, sy, sz) => { const o = new Pe(geo, m); o.scale.set(sx, sy, sz); g.add(o); return o; };
   if (look === "siege") { add(G.core, $gm(0xffffff, 2, 1), 18 * k, 4 * k, 4 * k); add(G.core, $gm(c, 1.4, .5), 28 * k, 7 * k, 7 * k); g.userData.spin = add(G.ring, $gm(c, 2.2, .9), 8 * k, 8 * k, 8 * k); g.userData.spin.rotation.y = Math.PI / 2; }
@@ -442,11 +442,11 @@ function $mkBody(look, c, k) {
   return g;
 }
 function $body(e, p) {
-  if (!p.$m || p.$mk !== p.look) { p.$m && e.scene.remove(p.$m); p.$m = $mkBody(p.look, p.color.getHex(), p.size || 1); p.$mk = p.look; e.scene.add(p.$m); $PB.add(p); }
+  if (!p.$m || p.$mk !== p.look) { p.$m && e.scene.remove(p.$m); p.$m = $mkBody(p.look, p.color.getHex(), p.size || 1); p.$mk = p.look; e.scene.add(p.$m); $PBD.add(p); }
   const m = p.$m; m.position.set(p.x, 6, p.z); m.rotation.y = -p.angle; m.userData.t = e.frame;
   m.userData.spin && (m.userData.spin.rotation.z += .3);
   p.look === "hell" && m.scale.setScalar(1 + Math.sin(p.age * 20) * .15);
 }
 // drop bodies whose projectile has died (pool objects are reused, so a body not refreshed this frame is stale)
-function $pbSweep(n) { for (const p of $PB) if (!p.active || n.frame - p.$m.userData.t > 1) n.scene.remove(p.$m), p.$m = null, $PB.delete(p); }
+function $pbSweep(n) { for (const p of $PBD) if (!p.active || n.frame - p.$m.userData.t > 1) n.scene.remove(p.$m), p.$m = null, $PBD.delete(p); }
 window.$VBz = () => $Z; // harness probe
