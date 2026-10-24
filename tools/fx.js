@@ -3,11 +3,11 @@
 // SAMPLED SOUND: Kenney "Sci-Fi Sounds" (CC0) clips embedded as $SFXD {file: base64 mp3}. A game sound with an entry here
 // plays a random variant (slight pitch jitter) through the game's own gain/pan node; layer:1 keeps the synth underneath too.
 var $SFXM = {
-  pulse: { f: "laserSmall", v: .45 }, turret: { f: "laserSmall", v: .25, r: 1.3 }, plasma: { f: "laserLarge", v: .5 },
-  heavy: { f: "laserLarge", v: .55, r: .75 }, rail: { f: "laserLarge", v: .6, r: .55, layer: 1 }, enemyShot: { f: "laserRetro", v: .25 },
-  hit: { f: "impactMetal", v: .35 }, crit: { f: "impactMetal", v: .5, r: 1.2, layer: 1 }, shieldHit: { f: "forceField", v: .35 },
-  explode: { f: "explosionCrunch", v: .75 }, explodeBig: { f: "lowFrequency_explosion", v: 1, layer: 1 }, rock: { f: "explosionCrunch", v: .45, r: .7 },
-  dash: { f: "thrusterFire", v: .5 }, missile: { f: "thrusterFire", v: .3, r: 1.4 }, warp: { f: "forceField", v: .5, r: .6, layer: 1 },
+  pulse: { f: "laserSmall", v: .2 }, turret: { f: "laserSmall", v: .1, r: 1.3 }, plasma: { f: "laserLarge", v: .25 },
+  heavy: { f: "laserLarge", v: .28, r: .75 }, rail: { f: "laserLarge", v: .32, r: .55, layer: 1 }, enemyShot: { f: "laserRetro", v: .1 },
+  hit: { f: "impactMetal", v: .2 }, crit: { f: "impactMetal", v: .28, r: 1.2, layer: 1 }, shieldHit: { f: "forceField", v: .2 },
+  explode: { f: "explosionCrunch", v: .4 }, explodeBig: { f: "lowFrequency_explosion", v: .55, layer: 1 }, rock: { f: "explosionCrunch", v: .14, r: .7 },
+  warp: { f: "forceField", v: .3, r: .6, layer: 1 },
 };
 var $SFXB = null;
 function $sfx(name, out, when) {
@@ -34,17 +34,18 @@ function $sfx(name, out, when) {
 // MUSIC: menu / battle / boss playlists ($MUSD, base64 mp3) crossfade on game state; each playlist starts on a random track
 // and moves to the next when one ends. Settings > Music sets their volume
 var $mus = null;
-function $musicVol() { const s = S.save?.settings; return (s?.volume ?? 1) * (s?.music ?? .5); }
+function $musicVol() { const s = S.save?.settings; return (s?.volume ?? 1) * (s?.music ?? .3); }
 function $music() {
   if (!$mus) {
     $mus = {};
-    for (const [k, list] of Object.entries($MUSD)) {
-      const m = ($mus[k] = { i: Math.floor(Math.random() * list.length), list: list.map((b) => { const a = new Audio("data:audio/mpeg;base64," + b); a.loop = list.length === 1; a.volume = 0; return a; }) });
+    const urls = $MUSD.tracks.map((b) => "data:audio/mpeg;base64," + b); // a track in several playlists is embedded once
+    for (const k of ["menu", "battle", "boss"]) {
+      const list = $MUSD[k], m = ($mus[k] = { i: Math.floor(Math.random() * list.length), list: list.map((t) => { const a = new Audio(urls[t]); a.loop = list.length === 1; a.volume = 0; return a; }) });
       for (const a of m.list) a.onended = () => { const v = a.volume; a.currentTime = 0; m.i = (m.i + 1) % m.list.length; m.list[m.i].volume = v; v > 0 && m.list[m.i].play().catch(() => {}); };
     }
     const el = document.getElementById("setMusic"), lab = document.getElementById("musVal");
     if (el) {
-      el.value = String(S.save?.settings?.music ?? .5); lab.textContent = Math.round(el.value * 100) + "%";
+      el.value = String(S.save?.settings?.music ?? .3); lab.textContent = Math.round(el.value * 100) + "%";
       el.oninput = () => { S.save.settings.music = +el.value; lab.textContent = Math.round(el.value * 100) + "%"; Ft(Ct, S.save); };
     }
   }
@@ -214,8 +215,67 @@ function $fxClear(n) {
     const z = $Z[i];
     if (z.k === "chunk") n.scene.remove(z.m), $WN--;
     else if (z.k === "halo") n.scene.remove(z.g);
+    else if (z.k === "comet") n.scene.remove(z.g), $CN--;
     else if (z.k !== "pop" && z.k !== "after") continue;
     $Z.splice(i, 1);
   }
   for (const D of $AI.splice(0)) n.scene.remove(D.m.root);
+}
+
+// VOID COMETS (Void Sovereign primary, weapon kind "comet"): dark-violet comets with white-hot cores weave toward enemies on a
+// double-helix trail; each hit bursts the comet into two smaller ones that hunt new targets (two generations deep)
+var $CG = null, $CN = 0;
+function $cometMesh(n, s) {
+  $CG ||= { core: new Rt(1, 10, 8), halo: new Rt(1, 12, 10), cm: new Ye({ color: new ge(0xffffff).multiplyScalar(4) }),
+    hm: new Ye({ color: new ge(0xa64dff).multiplyScalar(2.2), transparent: !0, opacity: .55, blending: 2, depthWrite: !1 }) };
+  const g = new Mt(), c = new Pe($CG.core, $CG.cm), h = new Pe($CG.halo, $CG.hm);
+  c.scale.setScalar(5 * s); h.scale.setScalar(13 * s); g.add(h, c); n.scene.add(g);
+  return g;
+}
+function $cometTarget(n, x, z, R, hits) {
+  let b = null, bd = R;
+  $near(n, x, z, R, (en) => { if (hits.has(en)) return; const d = Math.hypot(en.x - x, en.z - z); d < bd && ((bd = d), (b = en)); });
+  return b;
+}
+function $cometSpawn(n, x, z, a, w, gen, hits, target) {
+  if ($CN >= 70) return;
+  $CN++;
+  const s = [1, .72, .5][gen];
+  $Z.push({ k: "comet", t: 0, x, z, a, sp: 880 + gen * 120, life: 1.7 - gen * .3, age: 0, gen, s, dmg: w.dmg * [1, .55, .35][gen], w, hits, target, g: $cometMesh(n, s), ph: Math.random() * 6.283 });
+}
+function $comets(n, e, w, muz) {
+  const tgt = $cometTarget(n, n.input.wx, n.input.wz, 420, new Set()), N = w.count || 3;
+  for (let q = 0; q < N; q++) {
+    const m = muz[q % muz.length], a = e.angle + (N > 1 ? (q / (N - 1) - .5) * .5 : 0);
+    $cometSpawn(n, m.x, m.z, a, w, 0, new Set(), tgt);
+    n.fx.muzzle(m.x, 4, m.z, a, 0xc070ff, 1.4);
+  }
+  n.fx.flash(e.x, e.z, 0xa64dff, 1.2, .08);
+  n.audio.play("plasma", e.x, e.z, .6);
+}
+function $cometU(n, z, t) {
+  z.age += t; z.life -= t;
+  if ((!z.target || z.target.dead) && z.age > .12) z.target = $cometTarget(n, z.x, z.z, 650, z.hits);
+  if (z.target) z.a = Fn(z.a, xt(z.x, z.z, z.target.x, z.target.z), (5 + z.gen * 2) * t);
+  const weave = Math.sin(z.age * 13 + z.ph) * .55, h = z.a + weave * Math.min(1, z.age * 4);
+  z.x += Math.cos(h) * z.sp * t; z.z += Math.sin(h) * z.sp * t;
+  z.g.position.set(z.x, 12, z.z); z.g.children[0].scale.setScalar(13 * z.s * (1 + .15 * Math.sin(z.age * 30)));
+  // double helix: two violet strands spiralling around the path, plus white embers off the core
+  const px = -Math.sin(z.a), pz = Math.cos(z.a), o = Math.sin(z.age * 26 + z.ph) * 10 * z.s;
+  for (const sg of [1, -1]) n.fx.spawn(z.x + px * o * sg, 10, z.z + pz * o * sg, 0, 0, 0, .3 + z.s * .15, 7 * z.s + 3, 0, sg > 0 ? 1.1 : .7, .35, 2);
+  Math.random() < .5 && n.fx.spawn(z.x, 12, z.z, (Math.random() - .5) * 90, 0, (Math.random() - .5) * 90, .2, 4, 0, 2, 1.7, 2.2);
+  let hit = null;
+  $near(n, z.x, z.z, 60 + 14 * z.s, (en) => { if (!hit && !z.hits.has(en) && Math.hypot(en.x - z.x, en.z - z.z) < (en.r || 20) + 12 * z.s) hit = en; });
+  if (!hit && z.life > 0) return !1;
+  n.scene.remove(z.g); $CN--;
+  if (!hit) { n.fx.burst(z.x, z.z, { n: 8, color: 0xa64dff, speed: 120, life: .3, size: 6 }); return !0; }
+  yn(n, hit, z.dmg, { x: z.x, z: z.z, fromPlayer: !0 });
+  z.hits.add(hit);
+  n.fx.burst(z.x, z.z, { n: 14 - z.gen * 4, color: 0xc070ff, speed: 260, life: .35, size: 8 * z.s + 3 });
+  n.fx.shockwave(z.x, z.z, 50 * z.s + 20, 0xa64dff, .25);
+  n.fx.flash(z.x, z.z, 0xe0b0ff, 1 + z.s, .07);
+  n.audio.play("hit", z.x, z.z, .5);
+  if (z.gen < 2) for (const d of [-1, 1]) $cometSpawn(n, z.x, z.z, z.a + d * (.9 + Math.random() * .4), z.w, z.gen + 1, new Set(z.hits), null);
+  else n.shake(1);
+  return !0;
 }

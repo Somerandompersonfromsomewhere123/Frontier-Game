@@ -1,0 +1,6 @@
+{
+  "menu": ["drift.mp3", "titan.mp3"],
+  "battle": ["lost_frontier.mp3", "space_1990b.mp3", "lightless_dawn.mp3", "neon.mp3", "afterburn.mp3", "drift.mp3", "titan.mp3"],
+  "boss": ["clash_defiant.mp3", "volatile_reaction.mp3", "drift.mp3", "titan.mp3", "space_boss_battle.ogg"],
+  "trim": { "lost_frontier.mp3": [0, 150], "lightless_dawn.mp3": [205, 150], "clash_defiant.mp3": [90, 150] }
+}

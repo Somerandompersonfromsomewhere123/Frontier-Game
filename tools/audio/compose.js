@@ -1,4 +1,4 @@
-// Procedural soundtrack: node compose.js [name ...] -> tools/audio/music/<slot>_<name>.mp3 (seamless loops)
+// Procedural soundtrack: node compose.js [name ...] -> tools/audio/music/<name>.mp3 (seamless loops; playlist.json places them)
 // Each song is a chord loop, a section plan (which parts play for how many bars) and a seed for its melody. Instruments are
 // plain synthesis (sines, detuned saws, filtered noise); the lead melody is a 2-bar motif re-fitted to each chord, with
 // variations; everything ducks under the kick, then a ping-pong delay and a Schroeder reverb glue it together.
@@ -95,7 +95,7 @@ function render(S) {
 }
 
 for (const name of process.argv.slice(2).length ? process.argv.slice(2) : Object.keys(SONGS)) {
-  const S = SONGS[name], { pcm, secs } = render(S), file = `${OUT}/${S.slot}_${name}.mp3`;
+  const S = SONGS[name], { pcm, secs } = render(S), file = `${OUT}/${name}.mp3`;
   execFileSync(FF, ["-v", "error", "-y", "-f", "s16le", "-ar", String(SR), "-ac", "2", "-i", "pipe:0", "-b:a", "192k", file], { input: pcm, maxBuffer: 1 << 28 });
   console.log(file, secs.toFixed(1) + " s");
 }

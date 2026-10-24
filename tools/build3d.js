@@ -22,7 +22,8 @@ const HEX = { assault: 0x38f6ff, heavy: 0xffa63d, sniper: 0x5b9bff, drone: 0xc06
 const sharp = require(__dirname + "/pp/node_modules/sharp");
 const { execFileSync } = require("child_process"), FF = require(__dirname + "/pp/node_modules/ffmpeg-static");
 // audio -> base64 mp3 (plays everywhere, unlike ogg in Safari)
-const mp3 = (file, ...args) => execFileSync(FF, ["-v", "error", "-i", file, ...args, "-f", "mp3", "pipe:1"], { maxBuffer: 1 << 27 }).toString("base64");
+// pre: input options (e.g. -ss/-t to cut before filters run, so fades line up with the cut)
+const mp3 = (file, ...args) => mp3cut([], file, ...args), mp3cut = (pre, file, ...args) => execFileSync(FF, ["-v", "error", ...pre, "-i", file, ...args, "-f", "mp3", "pipe:1"], { maxBuffer: 1 << 27 }).toString("base64");
 // mesh buffers shrink ~35%: normals become normalized int8 and indices uint16 when they fit; positions and uvs stay float32
 // layout: pos f32 n*3 | nrm i8 n*3 (padded to 4) | uv f32 n*2 | idx u16/u32 (decoded by the $m3 loader)
 function compact(M) {
@@ -160,14 +161,18 @@ const swap = (s, a, b) => {
   const mb = LOADER.indexOf("if(!$M3C[id]){"), me = LOADER.indexOf("return[g,new Qt(o)]})}", mb) + "return[g,new Qt(o)]})}".length;
   if (mb < 0 || me < mb) throw new Error("loader material block not found");
   const loader = LOADER.slice(0, mb).replace("function $m3(id){", "function $m3M(id){const D=$M3[id];" + LOADER.slice(mb, me) + "return $M3C[id]}function $m3(id){") + "$m3M(id);" + LOADER.slice(me);
-  // sound (fx.js): the Kenney clips $SFXM uses, and music playlists: every tools/audio/music/<menu|battle|boss>_*.<audio> file
-  const SFXD = {}, MUSD = {}, KA = __dirname + "/audio/kenney/Audio", AM = __dirname + "/audio/music";
-  const used = /^(laserSmall|laserLarge|laserRetro|impactMetal|forceField|explosionCrunch|lowFrequency_explosion|thrusterFire)_\d+\.ogg$/;
+  // sound (fx.js): the Kenney clips $SFXM uses, and the music in tools/audio/music/playlist.json: each track embedded once
+  // (optionally trimmed to [start, seconds] with fades), all levelled to the same quiet loudness; slots list track indices
+  const SFXD = {}, KA = __dirname + "/audio/kenney/Audio", AM = __dirname + "/audio/music";
+  const used = /^(laserSmall|laserLarge|laserRetro|impactMetal|forceField|explosionCrunch|lowFrequency_explosion)_\d+\.ogg$/;
   for (const f of fs.readdirSync(KA).filter((f) => used.test(f))) SFXD[f.slice(0, -4)] = mp3(KA + "/" + f, "-ac", "1", "-b:a", "96k");
-  for (const k of ["menu", "battle", "boss"]) {
-    MUSD[k] = fs.readdirSync(AM).filter((f) => f.startsWith(k + "_")).sort().map((f) => mp3(AM + "/" + f, "-ac", "2", "-b:a", "80k"));
-    if (!MUSD[k].length) throw new Error("no music for " + k + " in " + AM);
-  }
+  const PL = JSON.parse(fs.readFileSync(AM + "/playlist.json", "utf8")), files = [...new Set(["menu", "battle", "boss"].flatMap((k) => PL[k]))];
+  const MUSD = { tracks: files.map((f) => {
+    if (!fs.existsSync(AM + "/" + f)) throw new Error("playlist.json names a missing track: " + f);
+    const [ss, t] = PL.trim?.[f] || [], cut = t ? ["-ss", String(ss), "-t", String(t)] : [], fade = t ? `afade=t=in:d=1,afade=t=out:st=${t - 3}:d=3,` : "";
+    return mp3cut(cut, AM + "/" + f, "-af", fade + "loudnorm=I=-23:TP=-3:LRA=11", "-ar", "44100", "-ac", "2", "-b:a", "64k");
+  }) };
+  for (const k of ["menu", "battle", "boss"]) MUSD[k] = PL[k].map((f) => files.indexOf(f));
   let s = fs.readFileSync(SRC, "utf8");
   s = swap(s, "function ai(n){", "var $M3=" + JSON.stringify(compact(M3)) + ";\n" + loader + fs.readFileSync(__dirname + "/bosses.js", "utf8") + "\nfunction ai(n){");
   // bosses: rotate the roster on boss waves, run the generic boss loop, name it in the HUD
@@ -236,7 +241,7 @@ const swap = (s, a, b) => {
   // Afterimage: ability entry, its cast, the clone update in the zone loop, and enemies aiming at live clones
   s = swap(s, 'phaseshift:{name:"Phase Shift"', 'afterimage:{name:"Afterimage",cost:50,cd:8,desc:"Dash toward the cursor, leaving 2 decoy clones that draw enemy fire, then explode."},phaseshift:{name:"Phase Shift"');
   s = swap(s, 'phaseshift(n,M,w){', 'afterimage(n,M,w){$afterimage(n,M,w)}, phaseshift(n,M,w){');
-  s = swap(s, 'else if(z.k==="decoy"){', 'else if(z.k==="after"){$afterU(n,z,t)&&$Z.splice(i,1)}else if(z.k==="halo"){$haloU(n,z,t)&&$Z.splice(i,1)}else if(z.k==="chunk"){$chunkU(n,z,t)&&$Z.splice(i,1)}else if(z.k==="pop"){$popU(n,z,t)&&$Z.splice(i,1)}else if(z.k==="decoy"){');
+  s = swap(s, 'else if(z.k==="decoy"){', 'else if(z.k==="after"){$afterU(n,z,t)&&$Z.splice(i,1)}else if(z.k==="halo"){$haloU(n,z,t)&&$Z.splice(i,1)}else if(z.k==="chunk"){$chunkU(n,z,t)&&$Z.splice(i,1)}else if(z.k==="pop"){$popU(n,z,t)&&$Z.splice(i,1)}else if(z.k==="comet"){$cometU(n,z,t)&&$Z.splice(i,1)}else if(z.k==="decoy"){');
   s = swap(s, 'r<i&&(i=r,t=s)}return t}function Lp(', 'r<i&&(i=r,t=s)}for(let s of $AI){let r=Math.hypot(s.x-e.x,s.z-e.z)*.4;r<i&&(i=r,t=s)}return t}function Lp(');
   s = swap(s, '"starbreaker": ["Zenith", "Zenith_Orange"]', '"starbreaker": ["Zenith", "Zenith_Green"]');
   s = swap(s, 'n==="starbreaker"&&t.push(', '(n==="starbreaker"||n==="starcore"||n==="tempest"||n==="valkyrieprime")&&t.push(');
@@ -263,6 +268,11 @@ const swap = (s, a, b) => {
   s = swap(s, "noCollide:!!x.noCollide,hits:null}", "noCollide:!!x.noCollide,hits:null,fx:x.fx||null,tier:x.tier||0}");
   s = swap(s, "let L=_.x,z=_.z;if(_.x+=_.vx*x,_.z+=_.vz*x,_.noCollide)", "_.fx&&$ptrail(e,_,x);let L=_.x,z=_.z;if(_.x+=_.vx*x,_.z+=_.vz*x,_.noCollide)");
   s = swap(s, "function g(x,v,P,_){let L={", "function g(x,v,P,_){x.fx&&$pimpact(e,x,P,_);let L={");
+  // Void Sovereign: Void Comets (fx.js $comets) replace the Sovereign Lance beam
+  s = swap(s, 'or({name:"Sovereign Lance",dps:150,range:1100,width:9,lance:!0,color:13148415})', '({kind:"comet",name:"Void Comets",dmg:45,rate:0,cooldown:.6,count:4,color:13148415})');
+  s = swap(s, 'switch(e[o]=(r.rate>0?1/r.rate:r.cooldown)/l,d(),r.kind){case"chain":', 'switch(e[o]=(r.rate>0?1/r.rate:r.cooldown)/l,d(),r.kind){case"comet":$comets(n,e,r,h());break;case"chain":');
+  s = swap(s, '"Secret apex. Piercing lance, eight-target lightning storm and a guardian fleet."', '"Secret apex. Void comets that split on every hit, an eight-target lightning storm and a guardian fleet."');
+  s = swap(s, "n.muzzles.push(ut(S*.48,0,S*.12),ut(S*.48,0,-S*.12));n.muzzles2.push(ut(S*.25,0,S*.3),ut(S*.25,0,-S*.3));return n}", "$sovGuns(n,e,S);return n}");
   // Nova Burst and Vortex Orbs fly a little faster (Vortex keeps roughly its old reach)
   s = swap(s, 'name:"Nova Burst",cooldown:.66,dmg:60,zap:30,zapRange:160,speed:320', 'name:"Nova Burst",cooldown:.66,dmg:60,zap:30,zapRange:160,speed:420');
   s = swap(s, 'vortex:260,speed:220,life:3.6', 'vortex:260,speed:290,life:3');
@@ -273,6 +283,8 @@ const swap = (s, a, b) => {
   s = swap(s, "primary:Gh(i.primary,", "primary:$tc(Gh(i.primary,");
   s = swap(s, ",(1+.05*r.primary)*l,1),secondary:Gh(i.secondary,(1+.12*r.secondary)*o,l,1-.06*r.secondary),", ",(1+.05*r.primary)*l,1),i.tier,i.cls),secondary:$tc(Gh(i.secondary,(1+.12*r.secondary)*o,l,1-.06*r.secondary),i.tier,i.cls),");
   s = swap(s, '["Tier 5-6 ship art","Original concept art by the Voidbreakers developer",""]', '["Tier 5-6 ship models","\\u201cProteron Ships\\u201d and \\u201cSpace Ships\\u201d by Viktor Hahn (CC BY 4.0)","https://v-ktor.itch.io/space-ships"]');
+  // audio credits (CC BY 4.0 needs the Kevin MacLeod line; the rest are CC0 or original)
+  s = swap(s, '["3D engine","three.js (MIT licence)","https://threejs.org"]', '["Music","\\u201cLost Frontier\\u201d, \\u201cSpace 1990-B\\u201d, \\u201cLightless Dawn\\u201d, \\u201cClash Defiant\\u201d and \\u201cVolatile Reaction\\u201d by Kevin MacLeod (incompetech.com), licensed under Creative Commons: By Attribution 4.0","https://creativecommons.org/licenses/by/4.0/"],["More music","\\u201cSpace Boss Battle\\u201d by MintoDog (CC0); Drift, Neon Run, Afterburn and Titan are original","https://opengameart.org/content/space-boss-battle"],["Sound effects","\\u201cSci-Fi Sounds\\u201d by Kenney (CC0)","https://kenney.nl/assets/sci-fi-sounds"],["3D engine","three.js (MIT licence)","https://threejs.org"]');
   // sectors (sky.js): nebula and planet colours become uniforms; the user's galaxy photos are embedded as sky maps ($SKYIMG);
   // every 10th wave cleared plays a hyperspace jump screen that switches sector
   const skyImg = [];

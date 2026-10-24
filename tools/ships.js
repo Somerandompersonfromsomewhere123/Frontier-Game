@@ -202,3 +202,17 @@ function $v3Hud(m, E) {
   E(h, V.name, Math.max((m.cdHalo || 0) / V.cd, 1 - Math.min(1, m.energy / V.cost)), !(m.cdHalo > 0) && m.energy >= V.cost, m.energy < V.cost);
   E(b, m.$bo ? "Boosting" : "Boost", 0, !!m.$bo, m.energy <= 1);
 }
+
+// VOID SOVEREIGN guns: comet emitters on the twin prong tips and the wing leading-edge peaks (measured from the Jungle Jim
+// hull outline: prongs reach 0.476 S at ±0.063 S, wings peak at 0.24 S around ±0.26 S), ordered left to right so the comet
+// fan matches; Storm Crown arcs from a core in the notch between the prongs
+function $sovGuns(n, e, S) {
+  const dk = Lt(2763322, { panel: 6, metal: .75, rough: .4 }), core = yt(0xb070ff, 2.8), halo = new Ye({ color: new ge(0xa64dff).multiplyScalar(1.6), transparent: !0, opacity: .45, blending: 2, depthWrite: !1 });
+  for (const [x, z, y] of [[.16, -.25, .045], [.43, -.063, .03], [.43, .063, .03], [.16, .25, .045]]) {
+    const m = $gun(e, x * S, y * S, z * S, S * .045, S * .011, 0, dk, core);
+    q(new Rt(S * .022, 10, 8), halo, m.x, m.y, m.z, e);
+    n.muzzles.push(m);
+  }
+  q(new Rt(S * .016, 10, 8), core, S * .4, S * .05, 0, e); q(new Rt(S * .03, 10, 8), halo, S * .4, S * .05, 0, e);
+  n.muzzles2.push(ut(S * .41, S * .05, 0));
+}
