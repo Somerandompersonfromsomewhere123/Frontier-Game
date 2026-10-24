@@ -4,7 +4,7 @@
 const fs = require("fs"), path = require("path");
 const sharp = require(__dirname + "/pp/node_modules/sharp");
 const { NodeIO } = require(__dirname + "/pp/node_modules/@gltf-transform/core");
-const DL = __dirname + "/dl", OUT = __dirname + "/models";
+const DL = __dirname + "/models", OUT = __dirname + "/models";
 const TEX = 1024;
 
 const jpg = async (buf) => (await sharp(buf).resize(TEX, TEX, { fit: "fill" }).flatten({ background: "#000" }).jpeg({ quality: 88 }).toBuffer()).toString("base64");
@@ -103,10 +103,11 @@ function finish({ prims, T }, rotY = 0) {
 }
 
 const MODELS = {
-  ...Object.fromEntries(["archimedes", "dalton", "hippocrates", "pythagoras", "watson"].map((k) => [k, () => fromGLB(`${DL}/proteron/gltf/${k}.glb`)])),
-  ...Object.fromEntries(["carrier01", "corvette01", "cruiser01", "destroyer01", "frigate01"].map((k) => [k, () => fromOBJ(`${DL}/itch/spaceships01_pbr/${k}.obj`, `${DL}/itch/spaceships01_pbr/${k}`)])),
-  gunboat: () => fromOBJ(`${DL}/itch/spaceships01_pbr/gunboat.obj`, `${DL}/itch/spaceships01_pbr/gun_boat`),
-  ...Object.fromEntries(["carrier03", "corvette03", "cruiser03", "destroyer03", "frigate03"].map((k) => [k, () => fromOBJ(`${DL}/itch/spaceships02_pbr/${k}.obj`, `${DL}/itch/spaceships02_pbr/${k}`)])),
+  ...Object.fromEntries(["archimedes", "dalton", "hippocrates", "pythagoras", "watson"].map((k) => [k, () => fromGLB(`${DL}/gltf/${k}.glb`)])),
+  ...Object.fromEntries(["carrier01", "corvette01", "cruiser01", "destroyer01", "frigate01"].map((k) => [k, () => fromOBJ(`${DL}/spaceships01_pbr/${k}.obj`, `${DL}/spaceships01_pbr/${k}`)])),
+  valkyrie_prime: () => fromGLB(`${DL}/valkyrie_prime/valkyrie_prime.glb`), // the user's own Blender model (valkyrie.blend)
+  gunboat: () => fromOBJ(`${DL}/spaceships01_pbr/gunboat.obj`, `${DL}/spaceships01_pbr/gun_boat`),
+  ...Object.fromEntries(["carrier03", "corvette03", "cruiser03", "destroyer03", "frigate03"].map((k) => [k, () => fromOBJ(`${DL}/spaceships02_pbr/${k}.obj`, `${DL}/spaceships02_pbr/${k}`)])),
 };
 module.exports = { MODELS, finish };
 
