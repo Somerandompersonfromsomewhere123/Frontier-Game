@@ -109,7 +109,8 @@ const swap = (s, a, b) => {
 (async () => {
   const M3 = {};
   for (const [id, model] of Object.entries(SHIP)) {
-    M3[id] = await tint(id, finish(await MODELS[model](), 90));
+    // valkyrie.blend has its nose on Blender +Y, the opposite of the Viktor Hahn models
+    M3[id] = await tint(id, finish(await MODELS[model](), model === "valkyrie_prime" ? -90 : 90));
     M3[id].H = hardpoints(M3[id]);
   }
   // Valkyrie Prime: one gun on each of its six blade tips (Blender tip positions from valkyrie.blend)
@@ -208,6 +209,9 @@ const swap = (s, a, b) => {
   s = swap(s, "uniform vec3 uSun; uniform float uTime; varying vec3 vN; varying vec3 vP;", "uniform vec3 uSun; uniform float uTime; varying vec3 vN; varying vec3 vP; uniform vec3 uPa, uPb, uPc;");
   s = swap(s, "vec3 a = vec3(0.55, 0.25, 0.45), b = vec3(0.95, 0.55, 0.30), c = vec3(0.25, 0.20, 0.55);", "vec3 a = uPa, b = uPb, c = uPc;");
   s = swap(s, 'S.ui.banner(`WAVE ${n}`,e?"CAPITAL SHIP INBOUND":"Hostiles inbound")', 'S.ui.banner(`WAVE ${n}`,e?"CAPITAL SHIP INBOUND":(S.$sk=$skyWave(n))?"Entering "+S.$sk:"Hostiles inbound")');
+  // dev/cheat menu: only when the game runs from a local file, or in a browser unlocked once with ?dev=<code>
+  // (only the code's SHA-256 is in the page; a static site can't truly lock it, but cheats only touch the local save)
+  s = swap(s, "document.body.append(dv,tg);", '(async()=>{try{const q=new URLSearchParams(location.search).get("dev");if(q&&crypto.subtle){const h=[...new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(q)))].map(b=>b.toString(16).padStart(2,"0")).join("");if(h==="bed21b3fe237cf8d852c5ba65621e732763e0c7b4232dbb134b19e1e3794f542")localStorage.setItem("vbDev","1");history.replaceState(null,"",location.pathname)}return location.protocol==="file:"||localStorage.getItem("vbDev")==="1"}catch(x){return location.protocol==="file:"}})().then(ok=>ok&&document.body.append(dv,tg));');
   fs.writeFileSync(DST, s);
   console.log("wrote", (fs.statSync(DST).size / 1e6).toFixed(1), "MB");
 })().catch((e) => { console.error(e); process.exit(1); });
