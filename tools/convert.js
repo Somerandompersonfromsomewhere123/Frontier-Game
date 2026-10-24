@@ -78,7 +78,7 @@ async function fromGLB(file) {
       const idx = I ? Array.from(I.getArray()) : [...Array(P.getCount()).keys()];
       const mat = pr.getMaterial(), m = { bc: [1, 1, 1, 1], me: 1, ro: 1, em: [0, 0, 0], bl: false };
       if (mat) {
-        m.bc = mat.getBaseColorFactor(); m.me = mat.getMetallicFactor(); m.ro = mat.getRoughnessFactor(); m.em = mat.getEmissiveFactor(); m.bl = mat.getAlphaMode() === "BLEND";
+        m.name = mat.getName(); m.bc = mat.getBaseColorFactor(); m.me = mat.getMetallicFactor(); m.ro = mat.getRoughnessFactor(); m.em = mat.getEmissiveFactor(); m.bl = mat.getAlphaMode() === "BLEND";
         m.map = await tex(mat.getBaseColorTexture()); m.mr = await tex(mat.getMetallicRoughnessTexture()); m.nm = await tex(mat.getNormalTexture()); m.emm = await tex(mat.getEmissiveTexture());
         if (m.emm != null && !m.em.some((x) => x > 0)) m.em = [1, 1, 1];
         for (const k of ["map", "mr", "nm", "emm"]) if (m[k] == null) delete m[k];
@@ -99,13 +99,35 @@ function finish({ prims, T }, rotY = 0) {
         (arr[k] = c * x + s * z), (arr[k + 2] = -s * x + c * z);
       }
   for (const p of prims) for (let k = 0; k < p.pos.length; k++) (mn[k % 3] = Math.min(mn[k % 3], p.pos[k])), (mx[k % 3] = Math.max(mx[k % 3], p.pos[k]));
-  return { mn, mx, P: prims.map((p) => ({ ...pack(p.pos, p.nrm, p.uv, p.idx), m: p.m })), T };
+  return { mn, mx, P: prims.map((p) => ({ ...pack(p.pos, p.nrm, p.uv, p.idx), m: (({ name, ...m }) => m)(p.m) })), T };
+}
+
+// Oblivion's armour uses procedural brick shaders in heavy_missile_ship.blend, which glTF exports as flat white: restore each
+// material's own colour (the mean of its two brick colours, linear); the red/cyan glows and plumes export correctly as they are
+const PAINT = { Armor_Grey: { bc: [0.138, 0.138, 0.15, 1] }, Armor_Dark: { bc: [0.031, 0.031, 0.037, 1] }, Armor_Red: { bc: [0.375, 0.019, 0.019, 1], em: [0.3, 0.015, 0.015] } }; // red panels get a faint self-glow
+// fuse ships into one hull: [model, scale, x, z, y] in the raw model space (Viktor Hahn noses on +z); shared textures load once
+async function fuse(parts) {
+  const out = { prims: [], T: [] }, at = new Map();
+  for (const [model, s, dx, dz, dy = 0] of parts) {
+    const g = await MODELS[model]();
+    if (!at.has(model)) at.set(model, out.T.length), out.T.push(...g.T);
+    const o = at.get(model);
+    for (const p of g.prims) {
+      for (let k = 0; k < p.pos.length; k += 3) (p.pos[k] = p.pos[k] * s + dx), (p.pos[k + 1] = p.pos[k + 1] * s + dy), (p.pos[k + 2] = p.pos[k + 2] * s + dz);
+      for (const t of ["map", "mr", "nm", "emm"]) if (p.m[t] != null) p.m[t] += o;
+      out.prims.push(p);
+    }
+  }
+  return out;
 }
 
 const MODELS = {
   ...Object.fromEntries(["archimedes", "dalton", "hippocrates", "pythagoras", "watson"].map((k) => [k, () => fromGLB(`${DL}/gltf/${k}.glb`)])),
   ...Object.fromEntries(["carrier01", "corvette01", "cruiser01", "destroyer01", "frigate01"].map((k) => [k, () => fromOBJ(`${DL}/spaceships01_pbr/${k}.obj`, `${DL}/spaceships01_pbr/${k}`)])),
   valkyrie_prime: () => fromGLB(`${DL}/valkyrie_prime/valkyrie_prime.glb`), // the user's own Blender model (valkyrie.blend)
+  oblivion: async () => { const g = await fromGLB(`${DL}/oblivion/oblivion.glb`); for (const p of g.prims) Object.assign(p.m, PAINT[p.m.name]); return g; }, // the user's heavy_missile_ship.glb
+  raven: () => fuse([["frigate01", 1.4, 0, 0], ["gunboat", 0.75, 2.6, -1], ["gunboat", 0.75, -2.6, -1]]), // Nova's hull stretched into a spine, two Wraith hulls as side pods
+  legion: () => fuse([["hippocrates", 1, 0, 0], ["watson", 0.55, 6.2, -1.5, -0.5], ["watson", 0.55, -6.2, -1.5, -0.5]]), // Overseer's delta with two Mothership hulls slung under the wings as hangars
   gunboat: () => fromOBJ(`${DL}/spaceships01_pbr/gunboat.obj`, `${DL}/spaceships01_pbr/gun_boat`),
   ...Object.fromEntries(["carrier03", "corvette03", "cruiser03", "destroyer03", "frigate03"].map((k) => [k, () => fromOBJ(`${DL}/spaceships02_pbr/${k}.obj`, `${DL}/spaceships02_pbr/${k}`)])),
 };

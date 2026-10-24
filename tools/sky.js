@@ -75,7 +75,8 @@ function $skyWave(S, w) {
   if (!$skyU_) return "";
   const f = $skyMap();
   if (f >= 0) { $skyI !== f && $skyShow(f); return ""; }
-  if (w <= 1) { $skyAt = 0; $skyNext = 0; $skyShow(0); return ""; }
+  if (w <= 1) { $skyAt = 0; $skyNext = 0; $skyShow(0); $rolled = !1; return ""; }
+  if (w === 101 && !$rolled) $roll(S);
   if (Math.floor((w - 1) / 10) === $skyAt) return "";
   $skyJump(S, w);
   return $SKYT[$skyNext][0]; // the sky itself swaps a moment later, under the jump screen
@@ -91,5 +92,31 @@ function $skyWave(S, w) {
 @keyframes vbj{0%{opacity:0}22%{opacity:1}72%{opacity:1}100%{opacity:0}}
 @keyframes vbs{0%{transform:scale(.4) rotate(0);opacity:0}25%{opacity:1}100%{transform:scale(2.6) rotate(12deg);opacity:.2}}
 @keyframes vbt{0%,25%{opacity:0;transform:scale(.85)}38%,70%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.08)}}`;
+  document.head.append(st);
+}
+
+// END CREDITS: clearing wave 100 rolls the credit list (read from the #credits dialog) up the screen, once per run;
+// the ship is untouchable while it plays, and a click or any key skips it
+var $rolled = !1;
+function $roll(S) {
+  $rolled = !0;
+  const items = [...document.querySelectorAll("#credits .ci")].map((c) => "<p>" + c.innerHTML + "</p>").join(""), d = document.createElement("div");
+  d.id = "vbroll";
+  d.innerHTML = `<div class="rl"><h1>VOIDBREAKERS</h1><h3>The Last Frontier</h3><p class="big">You held the frontier for 100 waves.</p><h2>Credits</h2>${items}<p class="big">Thank you for playing.</p></div><small>Click or press any key to skip</small>`;
+  document.body.append(d);
+  const end = () => { d.remove(); removeEventListener("keydown", end, !0); };
+  d.addEventListener("click", end); addEventListener("keydown", end, !0);
+  d.querySelector(".rl").addEventListener("animationend", end);
+  try { S.player.invuln = 40; } catch (x) {}
+}
+{
+  const st = document.createElement("style");
+  st.textContent = `#vbroll{position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,.88);overflow:hidden;color:#dfe9ff;text-align:center;font:500 18px "Barlow Semi Condensed",sans-serif;cursor:pointer}
+#vbroll .rl{position:absolute;left:50%;width:min(680px,90vw);transform:translate(-50%,100vh);animation:vbroll 38s linear forwards}
+#vbroll h1{font:400 clamp(44px,8vw,84px) "Saira Stencil One",sans-serif;color:#ffcf6a;margin:0}
+#vbroll h2{font:400 34px "Saira Stencil One",sans-serif;color:#9fe6ff;margin:60px 0 20px}#vbroll h3{letter-spacing:.3em;text-transform:uppercase;margin:4px 0 40px}
+#vbroll p{margin:0 0 18px}#vbroll p b{display:block;color:#ffcf6a}#vbroll a{color:#9fe6ff}#vbroll .big{font-size:24px;margin:50px 0}
+#vbroll small{position:fixed;bottom:14px;right:18px;opacity:.5}
+@keyframes vbroll{to{transform:translate(-50%,-100%)}}`;
   document.head.append(st);
 }

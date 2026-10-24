@@ -177,6 +177,7 @@ function $ctc(w, t, c) {
   return /^(pulse|plasma|rail|beam|chain|orb)$/.test(w.kind) ? { ...w, color: $TC[t] } : w;
 }
 function $ptrail(e, p, dt) {
+  if (p.look) return $look(e, p, dt);
   const k = p.tier || 2, c = p.color, x = p.x, z = p.z;
   if (p.fx === "energy") {
     // crackle: jittering sparks around the shot, and short lightning arcs off orbs
@@ -197,6 +198,7 @@ function $ptrail(e, p, dt) {
   }
 }
 function $pimpact(e, p, x, z) {
+  if (p.look) return $lookHit(e, p, x, z);
   const k = p.tier || 2, c = p.color.getHex();
   if (p.fx === "energy") {
     for (let q = 0; q < 1 + (k >> 1); q++) { const a = Math.random() * 6.283, L = 20 + k * 6; e.arsenal.bolt(x, z, x + Math.cos(a) * L, z + Math.sin(a) * L, c, 1.2); }
@@ -211,11 +213,14 @@ function $pimpact(e, p, x, z) {
 window.$VBfxEnd = (k) => { const m = $mus[k], a = m.list[m.i]; a.currentTime = Math.max(0, a.duration - .3); }; // smoke.js: skip to a track's end
 // run reset (hooked next to the game's own fx.clear): drop wreck chunks, Halo Breaker rings, pops and afterimage clones
 function $fxClear(n) {
+  for (const p of $PB) n.scene.remove(p.$m), p.$m = null;
+  $PB.clear();
   for (let i = $Z.length - 1; i >= 0; i--) {
     const z = $Z[i];
     if (z.k === "chunk") n.scene.remove(z.m), $WN--;
     else if (z.k === "halo") n.scene.remove(z.g);
     else if (z.k === "comet") n.scene.remove(z.g), $CN--;
+    else if (z.g3) n.scene.remove(z.g3); // T7 spores, swarm gates and mites (ships.js)
     else if (z.k !== "pop" && z.k !== "after") continue;
     $Z.splice(i, 1);
   }
@@ -234,7 +239,9 @@ function $cometMesh(n, s) {
 }
 function $cometTarget(n, x, z, R, hits) {
   let b = null, bd = R;
-  $near(n, x, z, R, (en) => { if (hits.has(en)) return; const d = Math.hypot(en.x - x, en.z - z); d < bd && ((bd = d), (b = en)); });
+  const f = (en) => { if (hits.has(en)) return; const d = Math.hypot(en.x - x, en.z - z); d < bd && ((bd = d), (b = en)); };
+  $near(n, x, z, R, f);
+  if (!b) for (const r of n.asteroids) !r.dead && f(r); // rocks only when no ship is in reach, so comets mine
   return b;
 }
 function $cometSpawn(n, x, z, a, w, gen, hits, target) {
@@ -265,7 +272,9 @@ function $cometU(n, z, t) {
   for (const sg of [1, -1]) n.fx.spawn(z.x + px * o * sg, 10, z.z + pz * o * sg, 0, 0, 0, .3 + z.s * .15, 7 * z.s + 3, 0, sg > 0 ? 1.1 : .7, .35, 2);
   Math.random() < .5 && n.fx.spawn(z.x, 12, z.z, (Math.random() - .5) * 90, 0, (Math.random() - .5) * 90, .2, 4, 0, 2, 1.7, 2.2);
   let hit = null;
-  $near(n, z.x, z.z, 60 + 14 * z.s, (en) => { if (!hit && !z.hits.has(en) && Math.hypot(en.x - z.x, en.z - z.z) < (en.r || 20) + 12 * z.s) hit = en; });
+  const f = (en) => { if (!hit && !en.dead && !z.hits.has(en) && Math.hypot(en.x - z.x, en.z - z.z) < (en.r || 20) + 12 * z.s) hit = en; };
+  $near(n, z.x, z.z, 60 + 14 * z.s, f);
+  if (!hit) for (const r of n.asteroids) f(r);
   if (!hit && z.life > 0) return !1;
   n.scene.remove(z.g); $CN--;
   if (!hit) { n.fx.burst(z.x, z.z, { n: 8, color: 0xa64dff, speed: 120, life: .3, size: 6 }); return !0; }

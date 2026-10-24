@@ -216,3 +216,237 @@ function $sovGuns(n, e, S) {
   q(new Rt(S * .016, 10, 8), core, S * .4, S * .05, 0, e); q(new Rt(S * .03, 10, 8), halo, S * .4, S * .05, 0, e);
   n.muzzles2.push(ut(S * .41, S * .05, 0));
 }
+
+// OBLIVION. Cataclysm: the Siege Driver charges for 0.6 s, then fires one shell that pierces everything (bursting on each hit)
+// and ends at the cursor (300-1100 units out) in a massive shockwave with hit-stop
+function $cataclysm(n, M, w) {
+  const P = w.primary, mz = () => pM(M, M.model.muzzles)[0];
+  n.audio.play("charge2", M.x, M.z, .8);
+  for (let k = 0; k < 6; k++) setTimeout(() => { if (n.player !== M || M.dead) return; const m = mz(); n.fx.burst(m.x, m.z, { n: 8, color: P.color, speed: 90, life: .25, size: 5 + k * 1.5 }); }, k * 100);
+  setTimeout(() => {
+    if (n.player !== M || M.dead) return;
+    const m = mz(), a = M.angle, L = Math.min(1100, Math.max(300, Math.hypot(n.input.wx - m.x, n.input.wz - m.z))), sp = 1600, x = m.x + Math.cos(a) * L, z = m.z + Math.sin(a) * L;
+    n.weapons.fire(M, { ...P, dmg: P.dmg * 500 / 150, pierce: 99, size: 3.6, speed: sp, life: L / sp, count: 1, spread: 0 }, a, [m], "player", { sound: "heavy" });
+    M.vx -= Math.cos(a) * 260; M.vz -= Math.sin(a) * 260; n.shake(6);
+    setTimeout(() => {
+      ds(n, x, z, 380, P.dmg * 6, "player", { fromPlayer: !0, push: 700 });
+      n.fx.shockwave(x, z, 380, P.color, .6); n.fx.shockwave(x, z, 220, 0xffffff, .35); n.fx.flash(x, z, P.color, 5, .25);
+      n.fx.burst(x, z, { n: 60, color: P.color, speed: 560, life: .8, size: 11, drag: 3 });
+      n.audio.play("explodeBig", x, z, .9); n.shake(14);
+      if (!(n.slowT > 0)) n.timeScale = .25, n.slowT = .08;
+    }, L / sp * 1000);
+  }, 600);
+}
+// Nova Mortar: after the shell lands, two damage rings expand outward with light knockback
+function $rings(n, x, z, w) {
+  for (const [k, f] of [[1, 1.5], [2, 2]]) setTimeout(() => {
+    ds(n, x, z, w.blast * f, w.dmg * .35, "player", { fromPlayer: !0, push: 140 });
+    n.fx.shockwave(x, z, w.blast * f, w.color, .35);
+  }, k * 160);
+}
+
+// RAVEN. Hellburst Cluster: the carrier splits into submunitions once it closes on a target (it pops on the next frame)
+function $split(e, _) {
+  const c = _.color.getHex(), tg = e.enemies.filter((k) => !k.dead && !k.untargetable && Math.hypot(k.x - _.x, k.z - _.z) < 450);
+  for (let i = 0; i < _.split; i++) e.weapons.spawn({ kind: "missile", team: _.team, x: _.x, z: _.z, angle: _.angle + (i - (_.split - 1) / 2) * .7, speed: 520, dmg: _.dmg * .5, life: 1.4, color: c, splash: 55, turn: 7, r: 4, len: 14, target: tg.length ? tg[i % tg.length] : null, owner: _.owner, fx: _.fx, tier: _.tier, look: "hellsub" });
+  e.fx.burst(_.x, _.z, { n: 14, color: c, speed: 260, life: .3, size: 7 }); e.audio.play("missile", _.x, _.z, .5);
+  _.split = 0; _.life = .001;
+}
+// Phantom Lock: mark up to 8 enemies near the cursor, then three synchronized Hunter Swarm volleys, one missile per mark each
+function $phantomlock(n, M, w) {
+  const P = w.primary, d = (k) => Math.hypot(k.x - n.input.wx, k.z - n.input.wz);
+  const F = n.enemies.filter((k) => !k.dead && !k.untargetable && d(k) < 1000).sort((a, b) => d(a) - d(b)).slice(0, 8);
+  for (const k of F) $st(n, k, { mark: 5 }), n.fx.shockwave(k.x, k.z, k.r * 2.2, P.color, .5);
+  n.audio.play("charge", M.x, M.z, .6);
+  const H = { ...P, count: 1, spread: 0 };
+  for (let j = 0; j < 3 && F.length; j++) setTimeout(() => {
+    if (n.player !== M || M.dead) return;
+    const mz = pM(M, M.model.muzzles);
+    F.forEach((k, i) => n.weapons.fire(M, H, M.angle + (i - F.length / 2) * .25, [mz[i % mz.length]], "player", { target: k.dead ? void 0 : k, fx: i === 0, sound: i ? null : "missile", vol: .5 }));
+  }, 300 + j * 140);
+}
+// F swaps Raven's primary between Hunter Swarm and the Annihilator Lance (cp and the HUD read e.$alt)
+function $alt(n, e) {
+  $pbSweep(n);
+  const A = e.stats.alt;
+  if (!A || !De.pressed.has("KeyF")) return;
+  e.$alt = !e.$alt;
+  n.ui.toast("Primary: " + (e.$alt ? A : e.stats.primary).name, "Press F to switch back.");
+  n.audio.play("charge", e.x, e.z, .4);
+}
+
+// PROJECTILE LOOKS for the T7 weapons (weapon.look rides on each projectile; fx.js $ptrail/$pimpact hand over to these)
+// siege: white-hot slug with a twin rifling spiral, cracks into a double shock ring · hunter: twin-helix exhaust, 4-point star hit
+// hell: dark smoke and a blinking beacon · hellsub: falling embers, crackle hit
+function $look(e, p, dt) {
+  $body(e, p);
+  const c = p.color, x = p.x, z = p.z, a = p.angle, px = -Math.sin(a), pz = Math.cos(a), k = p.size || 1;
+  if (p.look === "siege") {
+    const s = Math.sin(p.age * 45) * 6 * k;
+    e.fx.spawn(x, 5, z, 0, 0, 0, .16, 8 * k, 0, 2.2, 1.4, 1);
+    for (const g of [1, -1]) e.fx.spawn(x + px * s * g, 5, z + pz * s * g, 0, 0, 0, .22, 3 * k, 0, c.r * 2, c.g * 2, c.b * 2);
+  } else if (p.look === "hunter") {
+    const s = Math.sin(p.age * 30) * 7, bx = x - Math.cos(a) * 8, bz = z - Math.sin(a) * 8;
+    for (const g of [1, -1]) e.fx.spawn(bx + px * s * g, 4, bz + pz * s * g, 0, 0, 0, .3, 3.5, 0, 1.9, .7, .6);
+    e.fx.spawn(bx, 4, bz, 0, 0, 0, .08, 4, 0, 2, 1.8, 1.6);
+  } else if (p.look === "hell") {
+    const bx = x - Math.cos(a) * 12, bz = z - Math.sin(a) * 12;
+    e.fx.spawn(bx, 4, bz, (Math.random() - .5) * 30, 8, (Math.random() - .5) * 30, .7, 11, 10, .35, .06, .08);
+    e.fx.spawn(bx, 4, bz, -p.vx * .05, 0, -p.vz * .05, .15, 7, 0, 2, 1, .6);
+    if ((p.$bl = (p.$bl || 0) - dt) <= 0) p.$bl = .14, e.fx.flash(x, z, c.getHex(), .6, .05);
+  } else if (p.look === "hellsub") Math.random() < .7 && e.fx.spawn(x, 4, z, (Math.random() - .5) * 60, 20, (Math.random() - .5) * 60, .35, 3, 0, 2, .9, .3);
+}
+function $lookHit(e, p, x, z) {
+  const c = p.color.getHex(), a = p.angle;
+  if (p.look === "siege") {
+    const r = p.splash || 60;
+    e.fx.shockwave(x, z, r * .7, 0xffffff, .16); e.fx.shockwave(x, z, r * 1.25, c, .32);
+    e.fx.sparks(x, z, a, c, 12); e.fx.sparks(x, z, a + Math.PI, 0xffffff, 6); e.fx.flash(x, z, c, 1.6, .08);
+  } else if (p.look === "hunter") {
+    for (let q = 0; q < 4; q++) e.fx.sparks(x, z, a + q * Math.PI / 2 + Math.PI / 4, c, 6);
+    e.fx.flash(x, z, c, .9, .05);
+  } else if (p.look === "hell") {
+    e.fx.burst(x, z, { n: 24, color: c, speed: 240, life: .45, size: 7, drag: 3 }); e.fx.shockwave(x, z, 90, 0xff3060, .3);
+  } else if (p.look === "hellsub") for (let q = 0; q < 3; q++) e.fx.burst(x + (Math.random() - .5) * 30, z + (Math.random() - .5) * 30, { n: 5, color: 0xffb050, speed: 120, life: .2, size: 5 });
+}
+// Nova Mortar shell: pulsing core circled by two sparks
+function $mortarT(n, w) {
+  if (!w.$r) { w.$r = new Pe($g3().ring, $gm(w.w.color, 2, .8)); w.$r.scale.setScalar(5); w.orb.add(w.$r); }
+  w.$r.rotation.x += .2; w.$r.rotation.y += .13;
+  const o = w.orb.position, c = gM(w.w.color), b = n.time * 14;
+  for (const s of [0, Math.PI]) n.fx.spawn(o.x + Math.cos(b + s) * 14, o.y, o.z + Math.sin(b + s) * 14, 0, 0, 0, .35, 5, 0, ...c);
+  w.orb.scale.setScalar(1.4 + Math.sin(n.time * 30) * .4);
+}
+// Annihilator Lance: sparks shed sideways along the beam and rings running down it, both growing with heat
+function $lanceFx(n, e, r, m, dt) {
+  const h = e.heat || 0, ca = Math.cos(e.angle), sa = Math.sin(e.angle), c = gM(r.color);
+  for (let q = 0; q < 2 + h * 4; q++) { const d = Math.random() * r.range, s = (Math.random() < .5 ? -1 : 1) * (60 + 220 * h); n.fx.spawn(m.x + ca * d, 8, m.z + sa * d, -sa * s, 0, ca * s, .18, 3 + h * 4, 0, ...c); }
+  if ((e.$lr = (e.$lr || 0) - dt) <= 0) { e.$lr = .12 - h * .06; const d = (n.time * 900) % r.range; n.fx.shockwave(m.x + ca * d, m.z + sa * d, 14 + h * 16, r.color, .15); }
+  n.fx.flash(m.x, m.z, r.color, .8 + h * 1.8, .04);
+}
+
+// LEGION (drone apex). Shared low-poly glow meshes; materials are cached per colour and never disposed
+var $G3, $GM = {};
+const $g3 = () => $G3 ||= { core: new Rt(1, 6, 4), mite: new Rt(1, 4, 2), hex: new jt(1, .07, 4, 6), ring: new jt(1, .08, 4, 20) };
+const $gm = (c, b, o) => $GM[c + "|" + b + "|" + o] ||= new Ye({ color: new ge(c).multiplyScalar(b), transparent: !0, opacity: o, blending: 2, depthWrite: !1 });
+const $nearest = (n, x, z, r) => { let best = null; for (const en of n.enemies) { if (en.dead || en.untargetable || en.team === "neutral") continue; const d = Math.hypot(en.x - x, en.z - z); d < r && (r = d, best = en); } if (!best) for (const W of n.asteroids) { if (W.dead) continue; const d = Math.hypot(W.x - x, W.z - z); d < r && (r = d, best = W); } return best; }; // rocks when no enemy is near, so Legion can mine
+// Nanite Spores: wobbling seekers that latch onto a host and eat it (dmg spread over 3 s), hopping up to twice when it dies
+function $spores(n, e, r, mz, a) {
+  for (let k = 0; k < r.count; k++) { const m = mz[k % mz.length]; $Z.push($spore(n, m.x, m.z, a + (k - (r.count - 1) / 2) * .35 + (Math.random() - .5) * .2, r.speed, r.dmg, r.life, r.color)); }
+  n.audio.play("plasma", e.x, e.z, .4);
+}
+function $spore(n, x, z, a, sp, dmg, life, c, host) {
+  const G = $g3(), g = new Mt(), core = new Pe(G.core, $gm(c, 2.2, 1)), shell = new Pe(G.core, $gm(c, 1, .3));
+  core.scale.setScalar(4); shell.scale.setScalar(9); g.add(core, shell); g.position.set(x, 8, z); n.scene.add(g);
+  const o = Math.random() * 6.283;
+  return { k: "spore", x, z, vx: Math.cos(a) * sp, vz: Math.sin(a) * sp, sp, dmg, life, eat: 3, tick: 0, hops: 2, host: host || null, ox: Math.cos(o) * .7, oz: Math.sin(o) * .7, c, g3: g, core, shell, ag: 0, mites: 0 };
+}
+function $sporeEnd(n, z) { n.scene.remove(z.g3); n.fx.burst(z.x, z.z, { n: 6, color: z.c, speed: 90, life: .25, size: 4 }); return !0; }
+function $sporeU(n, z, t) {
+  z.ag += t;
+  const c = gM(z.c), h = z.host;
+  if (h && h.dead) {
+    for (let q = 0; q < z.mites; q++) $Z.push($mite(n, h.x, h.z, Math.random() * 6.283, z.dmg * .4, 4, z.c));
+    z.mites = 0; z.host = null;
+    if (z.hops-- <= 0) return $sporeEnd(n, z);
+    n.fx.burst(z.x, z.z, { n: 8, color: z.c, speed: 160, life: .3, size: 5 }); z.life = 1.5;
+  } else if (h) {
+    z.x = h.x + z.ox * h.r; z.z = h.z + z.oz * h.r;
+    if ((z.tick -= t) <= 0) z.tick = .25, yn(n, h, z.dmg / 12, { fromPlayer: !0, x: z.x, z: z.z, silent: !0 });
+    Math.random() < .4 && n.fx.spawn(z.x, 8, z.z, (Math.random() - .5) * 40, 10, (Math.random() - .5) * 40, .4, 4, 0, ...c);
+    const s = 1 + Math.sin(z.ag * 18) * .3;
+    z.core.scale.setScalar(4 * s); z.shell.scale.setScalar(7 + 3 * s); z.g3.position.set(z.x, 8, z.z);
+    return (z.eat -= t) <= 0 && $sporeEnd(n, z);
+  }
+  if ((z.life -= t) <= 0) return $sporeEnd(n, z);
+  const T = z.ag > .15 && $nearest(n, z.x, z.z, 700);
+  if (T) {
+    const na = Fn(Math.atan2(z.vz, z.vx), xt(z.x, z.z, T.x, T.z), 6 * t), sp = Math.min(z.sp * 1.6, Math.hypot(z.vx, z.vz) + 400 * t);
+    z.vx = Math.cos(na) * sp; z.vz = Math.sin(na) * sp;
+    if (Math.hypot(T.x - z.x, T.z - z.z) < T.r + 10) z.host = T, z.eat = 3, n.fx.burst(z.x, z.z, { n: 6, color: z.c, speed: 120, life: .25, size: 5 });
+  }
+  const L = Math.hypot(z.vx, z.vz) || 1, w = Math.sin(z.ag * 9 + z.sp) * 90 * t;
+  z.x += z.vx * t - z.vz / L * w; z.z += z.vz * t + z.vx / L * w;
+  n.fx.spawn(z.x, 8, z.z, 0, 0, 0, .3, 5, 0, ...c);
+  z.g3.position.set(z.x, 8, z.z); z.core.rotation.y += t * 6;
+  return !1;
+}
+// micro-drone: darts at the nearest enemy, rams it, bounces off and comes round again
+function $mite(n, x, z, a, dmg, life, c) {
+  const m = new Pe($g3().mite, $gm(c, 2.4, 1));
+  m.scale.set(7, 4, 4); m.position.set(x, 10, z); n.scene.add(m);
+  return { k: "mite", x, z, vx: Math.cos(a) * 300, vz: Math.sin(a) * 300, dmg, life, c, g3: m, tgt: null, cd: 0 };
+}
+function $miteU(n, z, t) {
+  if ((z.life -= t) <= 0) { n.scene.remove(z.g3); n.fx.burst(z.x, z.z, { n: 5, color: z.c, speed: 140, life: .2, size: 4 }); return !0; }
+  z.cd -= t;
+  if (!z.tgt || z.tgt.dead) z.tgt = $nearest(n, z.x, z.z, 650);
+  const T = z.tgt;
+  if (T) {
+    const dx = T.x - z.x, dz = T.z - z.z, d = Math.hypot(dx, dz) || 1;
+    z.vx += dx / d * 2600 * t; z.vz += dz / d * 2600 * t;
+    if (d < T.r + 8 && z.cd <= 0) {
+      yn(n, T, z.dmg, { fromPlayer: !0, x: z.x, z: z.z });
+      z.cd = .35; z.vx = -z.vx * .8 + (Math.random() - .5) * 400; z.vz = -z.vz * .8 + (Math.random() - .5) * 400;
+      n.fx.sparks(z.x, z.z, Math.atan2(z.vz, z.vx), z.c, 5);
+    }
+  }
+  const sp = Math.hypot(z.vx, z.vz);
+  sp > 700 && (z.vx *= 700 / sp, z.vz *= 700 / sp);
+  z.x += z.vx * t; z.z += z.vz * t;
+  z.g3.position.set(z.x, 10, z.z); z.g3.rotation.y = -Math.atan2(z.vz, z.vx);
+  n.frame % 2 === 0 && n.fx.spawn(z.x, 10, z.z, 0, 0, 0, .15, 3, 0, ...gM(z.c));
+  return !1;
+}
+// Swarm Gate: a spinning hex portal flies to the cursor (up to 800), opens and releases its micro-drones, then folds shut
+function $gate(n, e, r) {
+  const G = $g3(), m = pM(e, e.model.muzzles2)[0], a = xt(e.x, e.z, n.input.wx, n.input.wz), L = Math.min(800, Math.hypot(n.input.wx - e.x, n.input.wz - e.z));
+  const g = new Mt(), h1 = new Pe(G.hex, $gm(r.color, 2.6, 1)), h2 = new Pe(G.hex, $gm(r.color, 1.4, .6)), core = new Pe(G.core, $gm(0xffffff, 1.5, .5));
+  h1.rotation.x = h2.rotation.x = Math.PI / 2; h2.scale.setScalar(.7); g.add(h1, h2, core); g.position.set(m.x, 12, m.z); g.scale.setScalar(10); n.scene.add(g);
+  $Z.push({ k: "gate", x: m.x, z: m.z, x0: m.x, z0: m.z, x1: e.x + Math.cos(a) * L, z1: e.z + Math.sin(a) * L, fly: .35, ag: 0, life: r.life, left: r.count, spawn: 0, dmg: r.dmg, c: r.color, g3: g, h1, h2, core });
+  n.audio.play("warp", e.x, e.z, .5);
+}
+function $gateU(n, z, t) {
+  z.ag += t; z.h1.rotation.z += t * 3; z.h2.rotation.z -= t * 5;
+  const c = gM(z.c);
+  if (z.ag < z.fly) {
+    const f = z.ag / z.fly; z.x = z.x0 + (z.x1 - z.x0) * f; z.z = z.z0 + (z.z1 - z.z0) * f;
+    z.g3.position.set(z.x, 12, z.z); n.fx.spawn(z.x, 12, z.z, 0, 0, 0, .25, 6, 0, ...c);
+    return !1;
+  }
+  const o = z.ag - z.fly, R = Math.min(55, 10 + o * 200) * (o > z.life - .3 ? Math.max(0, (z.life - o) / .3) : 1);
+  z.g3.scale.setScalar(Math.max(.1, R)); z.g3.position.set(z.x, 12, z.z); z.core.scale.setScalar(.5 + Math.sin(z.ag * 20) * .15);
+  if (z.left > 0 && (z.spawn -= t) <= 0) { z.spawn = .2; z.left--; $Z.push($mite(n, z.x, z.z, Math.random() * 6.283, z.dmg, z.life - o + 1, z.c)); n.fx.burst(z.x, z.z, { n: 6, color: z.c, speed: 200, life: .2, size: 5 }); }
+  if (Math.random() < .5) { const b = Math.random() * 6.283; n.fx.spawn(z.x + Math.cos(b) * R, 12, z.z + Math.sin(b) * R, -Math.cos(b) * 80, 0, -Math.sin(b) * 80, .3, 5, 0, ...c); }
+  if (o < z.life) return !1;
+  n.scene.remove(z.g3); n.fx.shockwave(z.x, z.z, 80, z.c, .3);
+  return !0;
+}
+// Assimilate: a nanite wave plants a spore on every enemy within 520; infected enemies that die release 2 micro-drones
+function $assimilate(n, M, w) {
+  const P = w.primary;
+  n.fx.shockwave(M.x, M.z, 520, P.color, .6); n.fx.shockwave(M.x, M.z, 300, 0xffffff, .35);
+  n.audio.play("warp", M.x, M.z, .7); n.shake(5);
+  $near(n, M.x, M.z, 520, (en) => { const s = $spore(n, en.x, en.z, 0, P.speed, P.dmg, 1, P.color, en); s.mites = 2; $Z.push(s); });
+}
+
+// own projectile bodies for the T7 looks, laid over the pool's shared bolt/missile mesh: siege = white-hot capsule in a spinning
+// ring, hunter = glowing arrowhead, hell = pulsing core with a spinning halo, hellsub = small ember dart
+var $PB = new Set();
+function $mkBody(look, c, k) {
+  const G = $g3(), g = new Mt(), add = (geo, m, sx, sy, sz) => { const o = new Pe(geo, m); o.scale.set(sx, sy, sz); g.add(o); return o; };
+  if (look === "siege") { add(G.core, $gm(0xffffff, 2, 1), 18 * k, 4 * k, 4 * k); add(G.core, $gm(c, 1.4, .5), 28 * k, 7 * k, 7 * k); g.userData.spin = add(G.ring, $gm(c, 2.2, .9), 8 * k, 8 * k, 8 * k); g.userData.spin.rotation.y = Math.PI / 2; }
+  else if (look === "hunter") { add(G.mite, $gm(c, 2.4, 1), 10, 3, 3); add(G.core, $gm(0xffffff, 1.6, .6), 3, 3, 3); }
+  else if (look === "hell") { add(G.core, $gm(c, 2, 1), 7, 7, 7); g.userData.spin = add(G.ring, $gm(0xff3060, 2, .8), 14, 14, 14); g.userData.spin.rotation.x = Math.PI / 2; }
+  else add(G.mite, $gm(0xffb050, 2.4, 1), 5, 2.5, 2.5);
+  return g;
+}
+function $body(e, p) {
+  if (!p.$m || p.$mk !== p.look) { p.$m && e.scene.remove(p.$m); p.$m = $mkBody(p.look, p.color.getHex(), p.size || 1); p.$mk = p.look; e.scene.add(p.$m); $PB.add(p); }
+  const m = p.$m; m.position.set(p.x, 6, p.z); m.rotation.y = -p.angle; m.userData.t = e.frame;
+  m.userData.spin && (m.userData.spin.rotation.z += .3);
+  p.look === "hell" && m.scale.setScalar(1 + Math.sin(p.age * 20) * .15);
+}
+// drop bodies whose projectile has died (pool objects are reused, so a body not refreshed this frame is stale)
+function $pbSweep(n) { for (const p of $PB) if (!p.active || n.frame - p.$m.userData.t > 1) n.scene.remove(p.$m), p.$m = null, $PB.delete(p); }
+window.$VBz = () => $Z; // harness probe

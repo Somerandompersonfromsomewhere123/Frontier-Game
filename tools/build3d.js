@@ -10,14 +10,14 @@ const SHIP = {
   mothership: "watson", overseer: "hippocrates",
   hellfire: "frigate03", armageddon: "archimedes",
   reaper: "destroyer01", valkyrie: "corvette01",
-  wraith: "gunboat", nova: "frigate01", singularity: "dalton", valkyrieprime: "valkyrie_prime",
+  wraith: "gunboat", nova: "frigate01", singularity: "dalton", valkyrieprime: "valkyrie_prime", oblivion: "oblivion", raven: "raven", legion: "legion",
 };
 // same as $alien, but per ship, with emission maps, and the nose already turned to +X
 // textures load at startup; $M3OK tells the tree thumbnails (like $QOK) when they are ready
-const LOADER = `var $M3C={},$M3T={},$M3L=0,$M3N=0,$M3OK=!1;function $m3T(id){return $M3T[id]||=$M3[id].T.map(b=>{$M3N++;const t=new Pn,im=new Image;im.onload=()=>{t.image=im;t.needsUpdate=!0;++$M3L>=$M3N&&($M3OK=!0)};im.src="data:image/jpeg;base64,"+b;t.flipY=!1;t.wrapS=t.wrapT=1e3;t.anisotropy=8;return t})}for(const id in $M3)$m3T(id);function $m3(id){const D=$M3[id],d=He[id],S=84*(.9+.13*d.tier),col=Xt[d.cls].color,n=Zn(S*.4,col),e=n.body;if(!$M3C[id]){const T=$m3T(id);$M3C[id]=D.P.map(P=>{const b=Uint8Array.from(atob(P.b),c=>c.charCodeAt(0)).buffer,k=P.n,g=new kt,m=P.m;g.setAttribute("position",new Vt(new Float32Array(b,0,k*3),3));g.setAttribute("normal",new Vt(new Int8Array(b,k*12,k*3),3,!0));const o2=k*12+(k*3+3&~3);g.setAttribute("uv",new Vt(new Float32Array(b,o2,k*2),2));g.setIndex(new Vt(k<65536?new Uint16Array(b,o2+k*8,P.i):new Uint32Array(b,o2+k*8,P.i),1));const o={color:new ge(m.bc[0],m.bc[1],m.bc[2]),metalness:m.me*.85,roughness:Math.max(.25,m.ro),envMapIntensity:.9,emissive:new ge(m.em[0],m.em[1],m.em[2]),emissiveIntensity:.8};if(m.map!=null){o.map=T[m.map];o.map.colorSpace="srgb"}if(m.mr!=null)o.metalnessMap=o.roughnessMap=T[m.mr];if(m.nm!=null)o.normalMap=T[m.nm];if(m.emm!=null){o.emissiveMap=T[m.emm];o.emissiveMap.colorSpace="srgb"}if(m.bl){o.transparent=!0;o.opacity=Math.max(.25,m.bc[3]);o.depthWrite=!1}return[g,new Qt(o)]})}const W=Math.max(D.mx[0]-D.mn[0],D.mx[2]-D.mn[2]),k=S/W,grp=new Mt;for(const[g,m]of $M3C[id])grp.add(new Pe(g,m));grp.scale.setScalar(k);grp.position.set(-(D.mx[0]+D.mn[0])/2*k,2-D.mx[1]*k,-(D.mx[2]+D.mn[2])/2*k);e.add(grp);for(const z of[-1,1])n.engines.push(ut(-S*.5,2-(D.mx[1]-D.mn[1])*k/2,z*S*.12));const H=D.H,dk=Lt(2896185,{panel:3}),gl=yt(col,2.6),Y=v=>2+v*S,P=d.primary,Q=d.secondary,usesGun=w=>w&&(w.kind==="pulse"||w.kind==="plasma"||w.kind==="missile"||w.kind==="rail"&&w.count>1);const gun=(x,y,z,len,r,a)=>{const g=new Mt;g.position.set(x,y,z);g.rotation.y=-a;q(new bt(r*2.2,r*2.6,r*1.6,8),dk,0,0,0,g);q(_t(r,r*.85,len,6),dk,len/2,r*1.4,0,g);q(new Rt(r*.9,6,4),gl,len,r*1.4,0,g);e.add(g);return ut(x+Math.cos(a)*len,y+r*1.4,z+Math.sin(a)*len)};n.nose=ut(H.nose[0]*S,Y(H.nose[1])+S*.01,0);q(new Rt(S*.014,8,6),gl,n.nose.x,n.nose.y,0,e);if(H.blades)for(const b of H.blades)for(const z of[1,-1])n.muzzles.push(gun(b[0]*S-S*.05,Y(b[2]),z*b[1]*S,S*.07,S*.01,0));else if(usesGun(P))for(const z of[1,-1])n.muzzles.push(gun(H.wing[0]*S,Y(H.wing[2]),z*H.wing[1]*S,S*.09,S*.012,0));else n.muzzles.push(n.nose.clone());if(H.blades)n.muzzles2=n.muzzles.map(m=>m.clone());else if(usesGun(Q))for(const z of[1,-1])n.muzzles2.push(gun(H.pod[0]*S,Y(H.pod[2]),z*H.pod[1]*S,S*.07,S*.011,0));else n.muzzles2.push(ut(n.nose.x*.95,n.nose.y,0));n.dirGuns=[];for(const w of[P,Q])for(const a of(w&&w.dirs)||[])if(a){const E=H.edge.at(Math.round(Wt(a)/(Math.PI*2)*16+16)%16);n.dirGuns.push({a,p:gun(E[0]*S*.96,Y(E[2]),E[1]*S*.96,S*.06,S*.011,a)})}for(const T of H.tur.slice(0,d.turrets||0)){const g=new Mt;g.position.set(T[0]*S,Y(T[2]),T[1]*S);q(new bt(S*.035,S*.042,S*.02,8),dk,0,0,0,g);q(Ke(S*.065,S*.03,S*.05,1),dk,S*.006,S*.022,0,g);for(const z of[1,-1])q(_t(S*.007,S*.006,S*.08,6),dk,S*.06,S*.024,z*S*.012,g);e.add(g);n.turrets.push(g)}return n}\n`;
+const LOADER = `var $M3C={},$M3T={},$M3L=0,$M3N=0,$M3OK=!1;function $m3T(id){return $M3T[id]||=$M3[id].T.map(b=>{$M3N++;const t=new Pn,im=new Image;im.onload=()=>{t.image=im;t.needsUpdate=!0;++$M3L>=$M3N&&($M3OK=!0)};im.src="data:image/jpeg;base64,"+b;t.flipY=!1;t.wrapS=t.wrapT=1e3;t.anisotropy=8;return t})}for(const id in $M3)$m3T(id);function $m3(id){const D=$M3[id],d=He[id],S=84*(.9+.13*d.tier),col=Xt[d.cls].color,n=Zn(S*.4,col),e=n.body;if(!$M3C[id]){const T=$m3T(id);$M3C[id]=D.P.map(P=>{const b=Uint8Array.from(atob(P.b),c=>c.charCodeAt(0)).buffer,k=P.n,g=new kt,m=P.m;g.setAttribute("position",new Vt(new Float32Array(b,0,k*3),3));g.setAttribute("normal",new Vt(new Int8Array(b,k*12,k*3),3,!0));const o2=k*12+(k*3+3&~3);g.setAttribute("uv",new Vt(new Float32Array(b,o2,k*2),2));g.setIndex(new Vt(k<65536?new Uint16Array(b,o2+k*8,P.i):new Uint32Array(b,o2+k*8,P.i),1));const o={color:new ge(m.bc[0],m.bc[1],m.bc[2]),metalness:m.me*.85,roughness:Math.max(.25,m.ro),envMapIntensity:.9,emissive:new ge(m.em[0],m.em[1],m.em[2]),emissiveIntensity:.8};if(m.map!=null){o.map=T[m.map];o.map.colorSpace="srgb"}if(m.mr!=null)o.metalnessMap=o.roughnessMap=T[m.mr];if(m.nm!=null)o.normalMap=T[m.nm];if(m.emm!=null){o.emissiveMap=T[m.emm];o.emissiveMap.colorSpace="srgb"}if(m.bl){o.transparent=!0;o.opacity=Math.max(.25,m.bc[3]);o.depthWrite=!1}return[g,new Qt(o)]})}const W=Math.max(D.mx[0]-D.mn[0],D.mx[2]-D.mn[2]),k=S/W,grp=new Mt;for(const[g,m]of $M3C[id])grp.add(new Pe(g,m));grp.scale.setScalar(k);grp.position.set(-(D.mx[0]+D.mn[0])/2*k,2-D.mx[1]*k,-(D.mx[2]+D.mn[2])/2*k);e.add(grp);for(const z of[-1,1])n.engines.push(ut(-S*.5,2-(D.mx[1]-D.mn[1])*k/2,z*S*.12));const H=D.H,dk=Lt(2896185,{panel:3}),gl=yt(col,2.6),Y=v=>2+v*S,P=d.primary,Q=d.secondary,usesGun=w=>w&&(w.kind==="pulse"||w.kind==="plasma"||w.kind==="missile"||w.kind==="spore"||w.kind==="gate"||w.kind==="rail"&&w.count>1);const gun=(x,y,z,len,r,a)=>{const g=new Mt;g.position.set(x,y,z);g.rotation.y=-a;q(new bt(r*2.2,r*2.6,r*1.6,8),dk,0,0,0,g);q(_t(r,r*.85,len,6),dk,len/2,r*1.4,0,g);q(new Rt(r*.9,6,4),gl,len,r*1.4,0,g);e.add(g);return ut(x+Math.cos(a)*len,y+r*1.4,z+Math.sin(a)*len)};n.nose=ut(H.nose[0]*S,Y(H.nose[1])+S*.01,0);H.mz||q(new Rt(S*.014,8,6),gl,n.nose.x,n.nose.y,0,e);if(H.mz)for(const b of H.mz)n.muzzles.push(ut(b[0]*S,Y(b[2]),b[1]*S));else if(H.blades)for(const b of H.blades)for(const z of[1,-1])n.muzzles.push(gun(b[0]*S-S*.05,Y(b[2]),z*b[1]*S,S*.07,S*.01,0));else if(usesGun(P))for(const z of[1,-1])n.muzzles.push(gun(H.wing[0]*S,Y(H.wing[2]),z*H.wing[1]*S,S*.09,S*.012,0));else n.muzzles.push(n.nose.clone());if(H.blades)n.muzzles2=n.muzzles.map(m=>m.clone());else if(usesGun(Q))for(const z of[1,-1])n.muzzles2.push(gun(H.pod[0]*S,Y(H.pod[2]),z*H.pod[1]*S,S*.07,S*.011,0));else n.muzzles2.push(ut(n.nose.x*.95,n.nose.y,0));n.dirGuns=[];for(const w of[P,Q])for(const a of(w&&w.dirs)||[])if(a){const E=H.edge.at(Math.round(Wt(a)/(Math.PI*2)*16+16)%16);n.dirGuns.push({a,p:gun(E[0]*S*.96,Y(E[2]),E[1]*S*.96,S*.06,S*.011,a)})}for(const T of H.tur.slice(0,d.turrets||0)){const g=new Mt;g.position.set(T[0]*S,Y(T[2]),T[1]*S);q(new bt(S*.035,S*.042,S*.02,8),dk,0,0,0,g);q(Ke(S*.065,S*.03,S*.05,1),dk,S*.006,S*.022,0,g);for(const z of[1,-1])q(_t(S*.007,S*.006,S*.08,6),dk,S*.06,S*.024,z*S*.012,g);e.add(g);n.turrets.push(g)}return n}\n`;
 
 // class colours from the game's Xt table; grey hull metal stays, coloured panels and glows take the class hue
-const CLASS = { reaper: "assault", valkyrie: "assault", colossus: "heavy", titan: "heavy", railbreaker: "sniper", spectre: "sniper", mothership: "drone", overseer: "drone", hellfire: "missile", armageddon: "missile", wraith: "energy", nova: "energy", singularity: "energy", valkyrieprime: "assault" };
+const CLASS = { reaper: "assault", valkyrie: "assault", colossus: "heavy", titan: "heavy", railbreaker: "sniper", spectre: "sniper", mothership: "drone", overseer: "drone", hellfire: "missile", armageddon: "missile", wraith: "energy", nova: "energy", singularity: "energy", valkyrieprime: "assault", oblivion: "heavy", raven: "missile", legion: "drone" };
 const HEX = { assault: 0x38f6ff, heavy: 0xffa63d, sniper: 0x5b9bff, drone: 0xc06bff, missile: 0xff6a3d, energy: 0x3fd2c7 };
 const sharp = require(__dirname + "/pp/node_modules/sharp");
 const { execFileSync } = require("child_process"), FF = require(__dirname + "/pp/node_modules/ffmpeg-static");
@@ -133,7 +133,7 @@ const swap = (s, a, b) => {
   const M3 = {};
   for (const [id, model] of Object.entries(SHIP)) {
     // valkyrie.blend has its nose on Blender +Y, the opposite of the Viktor Hahn models
-    M3[id] = await tint(id, finish(await MODELS[model](), model === "valkyrie_prime" ? -90 : 90));
+    M3[id] = await tint(id, finish(await MODELS[model](), model === "valkyrie_prime" || model === "oblivion" ? -90 : 90));
     M3[id].H = hardpoints(M3[id]);
   }
   // Valkyrie Prime: one gun on each of its six blade tips, measured from the model (forward-most vertex of each right-hand blade; glTF -z is the nose)
@@ -154,6 +154,22 @@ const swap = (s, a, b) => {
       if (!t) throw new Error("no blade tip for " + name);
       return [(-t[2] - cx) / W, t[0] / W, (t[1] - D.mx[1]) / W];
     });
+  }
+  // Oblivion: the Siege Driver fires from the muzzle of the model's own dorsal cannon (forward-most vertex of Heavy_Cannon, on the centreline)
+  {
+    const D = M3.oblivion, W = Math.max(D.mx[0] - D.mn[0], D.mx[2] - D.mn[2]), cx = (D.mx[0] + D.mn[0]) / 2;
+    const doc = await new NodeIO().read(__dirname + "/models/oblivion/oblivion.glb");
+    const node = doc.getRoot().listNodes().find((n) => n.getName() === "Heavy_Cannon"), M = node.getWorldMatrix(), v = [0, 0, 0];
+    let t = null;
+    for (const pr of node.getMesh().listPrimitives()) {
+      const P = pr.getAttribute("POSITION");
+      for (let k = 0; k < P.getCount(); k++) {
+        P.getElement(k, v);
+        const p = [0, 1, 2].map((i) => M[i] * v[0] + M[4 + i] * v[1] + M[8 + i] * v[2] + M[12 + i]);
+        if (!t || p[2] < t[2]) t = p;
+      }
+    }
+    D.H.mz = [[(-t[2] - cx) / W, 0, (t[1] - D.mx[1]) / W]];
   }
   // boss hulls: the three unused Viktor Hahn ships, recoloured hostile crimson
   for (const [key, model] of [["@carrier", "carrier01"], ["@lance", "destroyer03"], ["@warden", "corvette03"]]) M3[key] = await tint(key, finish(await MODELS[model](), 90), 0xff2d4a);
@@ -237,16 +253,22 @@ const swap = (s, a, b) => {
   const starbreaker = 'nt("starbreaker","Starbreaker","sniper",7,["spectre"],"Apex marksman. Twin railguns that pierce everything and a starfall lance that cuts to the horizon.",{primary:ar({name:"Starbreaker Railguns",dmg:260,charge:.7,count:2,pierce:99,life:.85}),secondary:or({name:"Starfall Lance",dps:170,range:1200,width:5,lance:!0}),ability:"command"},{},{})';
   const tempest = 'nt("tempest","Tempest","assault",7,["valkyrie"],"Apex delta fighter. Twin rapid cannons on the canards and a spine railgun through the nose.",{primary:St({name:"Tempest Cannons",count:2,dmg:18,rate:12,spread:.03,pierce:1,speed:1700}),secondary:ar({name:"Spine Railgun",dmg:280,charge:.6,pierce:99,life:.7}),ability:"blink"},{maxSpeed:460},{})';
   const valkyrieprime = 'nt("valkyrieprime","Valkyrie Prime","assault",7,["valkyrie"],"Apex blade fighter. Six blade lasers converge on the cursor, wing lances fan through crowds, and afterimages draw enemy fire.",{primary:St({name:"Blade Lasers",count:6,dmg:6,rate:11,spread:.015,speed:1800,life:.6,len:40}),secondary:St({name:"Wing Lances",count:6,dmg:60,rate:0,cooldown:1.3,spread:.55,speed:2200,life:.55,pierce:99,len:110}),ability:"afterimage"},{maxSpeed:450},{})';
-  s = swap(s, oldSB + ',nt("sovereign"', [starbreaker, starcore, tempest, valkyrieprime].join(",") + ',nt("sovereign"');
+  // GDD tier 7 split: Oblivion (heavy) = Siege Driver + Nova Mortar + Cataclysm; Raven (missile) = Hunter Swarm + Hellburst Cluster,
+  // Annihilator Lance as the alternate primary (F), Phantom Lock
+  const oblivion = 'nt("oblivion","Oblivion","heavy",7,["titan"],"Apex siege ship. Siege Driver shells punch through ranks and burst on every hit, Nova Mortar rounds ring outward, and Cataclysm fires one charged shell that levels the field.",{primary:ps({name:"Siege Driver",kind:"pulse",len:90,look:"siege",dmg:150,rate:1.4,speed:1900,life:.75,pierce:3,splash:110,size:2.2,recoil:110,push:220,color:16756797}),secondary:ko({name:"Nova Mortar",dmg:110,blast:150,cooldown:1.7,rings:!0,color:16756797}),ability:"cataclysm"},{armor:.42},{})';
+  const raven = 'nt("raven","Raven","missile",7,["armageddon"],"Apex hunter. Six-missile Hunter Swarms, Hellburst carriers that split near enemies, and an Annihilator Lance on F for precise tracking fire.",{primary:bn({name:"Hunter Swarm",look:"hunter",count:6,cooldown:1.1,dmg:60,spread:1.6,turn:5.5,speed:700,color:16738877}),secondary:bn({name:"Hellburst Cluster",look:"hell",count:1,cooldown:1.3,dmg:350,splash:90,speed:560,turn:4,split:5,color:16738877}),alt:or({name:"Annihilator Lance",look:"lance",dps:150,range:1000,width:9,lance:!0,heat:!0,color:16738877}),ability:"phantomlock"},{},{})';
+  // Legion (drone apex): weapon kinds the game never had, run by ships.js ($spores / $gate / $assimilate)
+  const legion = 'nt("legion","Legion","drone",7,["overseer"],"Apex hive. Nanite spores latch on and devour, Swarm Gates pour out ramming micro-drones, and Assimilate turns the dying into more swarm.",{primary:{kind:"spore",name:"Nanite Spores",dmg:70,rate:1.4,count:3,life:3.5,speed:420,color:12648266,desc:"Three seeking spores latch onto enemies and eat them for 3 s, hopping to a new host when theirs dies."},secondary:{kind:"gate",name:"Swarm Gate",dmg:30,rate:0,cooldown:5,count:8,life:5,color:12648266,desc:"Opens a gate at the cursor that releases 8 micro-drones; they dart between enemies, ramming them, for 5 s."},ability:"assimilate",drones:["ram","ram","ram","ram","laser","laser","shield","shield"]},{},{})';
+  s = swap(s, oldSB + ',nt("sovereign"', [starbreaker, starcore, tempest, valkyrieprime, oblivion, raven, legion].join(",") + ',nt("sovereign"');
   // Afterimage: ability entry, its cast, the clone update in the zone loop, and enemies aiming at live clones
   s = swap(s, 'phaseshift:{name:"Phase Shift"', 'afterimage:{name:"Afterimage",cost:50,cd:8,desc:"Dash toward the cursor, leaving 2 decoy clones that draw enemy fire, then explode."},phaseshift:{name:"Phase Shift"');
   s = swap(s, 'phaseshift(n,M,w){', 'afterimage(n,M,w){$afterimage(n,M,w)}, phaseshift(n,M,w){');
   s = swap(s, 'else if(z.k==="decoy"){', 'else if(z.k==="after"){$afterU(n,z,t)&&$Z.splice(i,1)}else if(z.k==="halo"){$haloU(n,z,t)&&$Z.splice(i,1)}else if(z.k==="chunk"){$chunkU(n,z,t)&&$Z.splice(i,1)}else if(z.k==="pop"){$popU(n,z,t)&&$Z.splice(i,1)}else if(z.k==="comet"){$cometU(n,z,t)&&$Z.splice(i,1)}else if(z.k==="decoy"){');
   s = swap(s, 'r<i&&(i=r,t=s)}return t}function Lp(', 'r<i&&(i=r,t=s)}for(let s of $AI){let r=Math.hypot(s.x-e.x,s.z-e.z)*.4;r<i&&(i=r,t=s)}return t}function Lp(');
   s = swap(s, '"starbreaker": ["Zenith", "Zenith_Orange"]', '"starbreaker": ["Zenith", "Zenith_Green"]');
-  s = swap(s, 'n==="starbreaker"&&t.push(', '(n==="starbreaker"||n==="starcore"||n==="tempest"||n==="valkyrieprime")&&t.push(');
+  s = swap(s, 'n==="starbreaker"&&t.push(', '(n==="starbreaker"||n==="starcore"||n==="tempest"||n==="valkyrieprime"||n==="oblivion"||n==="raven"||n==="legion")&&t.push(');
   // Valkyrie Prime third weapon (F, Halo Breaker) and booster (hold Shift): ships.js $v3 / $boost, HUD slots beside the ability
-  s = swap(s, 'Zh(n,"drones")&&n.arsenal.toggleDrones()', '$v3(n,e,i,t),Zh(n,"drones")&&n.arsenal.toggleDrones()');
+  s = swap(s, 'Zh(n,"drones")&&n.arsenal.toggleDrones()', '$v3(n,e,i,t),$alt(n,e),Zh(n,"drones")&&n.arsenal.toggleDrones()');
   s = swap(s, 'let y=r*i.maxSpeed,g=a*i.maxSpeed,', 'let $b=$boost(n,e,t,o),y=r*i.maxSpeed*$b,g=a*i.maxSpeed*$b,');
   s = swap(s, 'v=(o>0?i.accel:i.accel*.6)*t', 'v=(o>0?i.accel*$b:i.accel*.6)*t');
   s = swap(s, '(e.dashT>0?2:0))*m;', '(e.dashT>0?2:0)+(e.$bo?1.8:0))*m;');
@@ -266,8 +288,8 @@ const swap = (s, a, b) => {
   // class shot styles (fx.js $ctc/$ptrail/$pimpact): the projectile pool carries fx (class) and tier from the weapon
   s = swap(s, "push:v.push,pierce:v.pierce,ricochet:v.ricochet,frags:v.frags,st:v.st})", "push:v.push,pierce:v.pierce,ricochet:v.ricochet,frags:v.frags,st:v.st,fx:v.fx,tier:v.tier})");
   s = swap(s, "noCollide:!!x.noCollide,hits:null}", "noCollide:!!x.noCollide,hits:null,fx:x.fx||null,tier:x.tier||0}");
-  s = swap(s, "let L=_.x,z=_.z;if(_.x+=_.vx*x,_.z+=_.vz*x,_.noCollide)", "_.fx&&$ptrail(e,_,x);let L=_.x,z=_.z;if(_.x+=_.vx*x,_.z+=_.vz*x,_.noCollide)");
-  s = swap(s, "function g(x,v,P,_){let L={", "function g(x,v,P,_){x.fx&&$pimpact(e,x,P,_);let L={");
+  s = swap(s, "let L=_.x,z=_.z;if(_.x+=_.vx*x,_.z+=_.vz*x,_.noCollide)", "(_.fx||_.look)&&$ptrail(e,_,x);let L=_.x,z=_.z;if(_.x+=_.vx*x,_.z+=_.vz*x,_.noCollide)");
+  s = swap(s, "function g(x,v,P,_){let L={", "function g(x,v,P,_){(x.fx||x.look)&&$pimpact(e,x,P,_);let L={");
   // Void Sovereign: Void Comets (fx.js $comets) replace the Sovereign Lance beam
   s = swap(s, 'or({name:"Sovereign Lance",dps:150,range:1100,width:9,lance:!0,color:13148415})', '({kind:"comet",name:"Void Comets",dmg:45,rate:0,cooldown:.6,count:4,color:13148415})');
   s = swap(s, 'switch(e[o]=(r.rate>0?1/r.rate:r.cooldown)/l,d(),r.kind){case"chain":', 'switch(e[o]=(r.rate>0?1/r.rate:r.cooldown)/l,d(),r.kind){case"comet":$comets(n,e,r,h());break;case"chain":');
@@ -282,6 +304,23 @@ const swap = (s, a, b) => {
   s = swap(s, "function Gh(n,e,t,i){", "var $TC=[0,6094714,3729663,5078527,11754751,16732120,16752688,16726072];function $tc(w,t,c){return $ctc(w,t,c)}function Gh(n,e,t,i){");
   s = swap(s, "primary:Gh(i.primary,", "primary:$tc(Gh(i.primary,");
   s = swap(s, ",(1+.05*r.primary)*l,1),secondary:Gh(i.secondary,(1+.12*r.secondary)*o,l,1-.06*r.secondary),", ",(1+.05*r.primary)*l,1),i.tier,i.cls),secondary:$tc(Gh(i.secondary,(1+.12*r.secondary)*o,l,1-.06*r.secondary),i.tier,i.cls),");
+  s = swap(s, "i.tier,i.cls),ability:{id:i.ability", "i.tier,i.cls),alt:i.alt?$tc(Gh(i.alt,(1+.1*r.primary)*o,(1+.05*r.primary)*l,1),i.tier,i.cls):null,ability:{id:i.ability");
+  // Raven's alternate primary: fired and shown in the primary slot while toggled ($alt in ships.js)
+  s = swap(s, "function cp(n,e,t,i,s){let r=e.stats[t]", "function cp(n,e,t,i,s){let r=t===\"primary\"&&e.$alt&&e.stats.alt||e.stats[t]");
+  s = swap(s, "E(e.slotPrimary,Jo(p.primary)", "E(e.slotPrimary,Jo(m.$alt&&p.alt||p.primary)");
+  // Oblivion / Raven abilities, Hellburst carriers that split near a target ($split), Nova Mortar rings ($rings)
+  s = swap(s, 'focus:{name:"Focus"', 'cataclysm:{name:"Cataclysm",cost:80,cd:14,desc:"Charges the Siege Driver, then fires a shell that pierces everything and ends in a massive shockwave."},assimilate:{name:"Assimilate",cost:70,cd:12,desc:"A nanite wave infects every enemy within 520 with a spore; infected enemies that die burst into 2 hunter micro-drones."},phantomlock:{name:"Phantom Lock",cost:70,cd:11,desc:"Marks up to 8 enemies near the cursor, then fires a synchronized Hunter Swarm: 3 missiles at each."},focus:{name:"Focus"');
+  s = swap(s, "focus(n,M){$near", "cataclysm(n,M,w){$cataclysm(n,M,w)},phantomlock(n,M,w){$phantomlock(n,M,w)},assimilate(n,M,w){$assimilate(n,M,w)},focus(n,M){$near");
+  s = swap(s, "pierce:x.pierce||0,", "pierce:x.pierce||0,split:x.split||0,look:x.look||null,");
+  s = swap(s, "st:v.st,fx:v.fx,tier:v.tier})", "st:v.st,fx:v.fx,tier:v.tier,split:v.split,look:v.look})");
+  s = swap(s, "(_.target=_.age>.15?m(_.x,_.z,_.team,650):null),", "(_.target=_.age>.15?m(_.x,_.z,_.team,650):null),_.split&&_.target&&Math.hypot(_.target.x-_.x,_.target.z-_.z)<260&&$split(e,_),");
+  // per-weapon projectile looks ($look / $lookHit / $mortarT / $lanceFx), Legion's weapon kinds, and descriptions for kinds the game has no text for
+  s = swap(s, "n.frame%2===0&&n.fx.spawn(w.orb.po", "w.w.rings&&$mortarT(n,w),n.frame%2===0&&n.fx.spawn(w.orb.po");
+  s = swap(s, ",s,$nz(e,a,t),e.angle),d()}return}", ",s,$nz(e,a,t),e.angle),r.look&&$lanceFx(n,e,r,$nz(e,a,t),s),d()}return}");
+  s = swap(s, 'case"orb":n.arsenal.orb(e,r,$nz(e,a,t),e.angle);break;', 'case"orb":n.arsenal.orb(e,r,$nz(e,a,t),e.angle);break;case"spore":$spores(n,e,r,h(),e.angle);break;case"gate":$gate(n,e,r);break;');
+  s = swap(s, 'function Op(n){if(!n)return"";', 'function Op(n){if(!n)return"";if(n.desc)return n.desc;');
+  s = swap(s, 'else if(z.k==="after"){', 'else if(z.k==="spore"){$sporeU(n,z,t)&&$Z.splice(i,1)}else if(z.k==="gate"){$gateU(n,z,t)&&$Z.splice(i,1)}else if(z.k==="mite"){$miteU(n,z,t)&&$Z.splice(i,1)}else if(z.k==="after"){');
+  s = swap(s, "F>=1&&(x(w.x1,w.z1,w.w.blast,w.w.dmg,w.w.color),", "F>=1&&(x(w.x1,w.z1,w.w.blast,w.w.dmg,w.w.color),w.w.rings&&$rings(n,w.x1,w.z1,w.w),");
   s = swap(s, '["Tier 5-6 ship art","Original concept art by the Voidbreakers developer",""]', '["Tier 5-6 ship models","\\u201cProteron Ships\\u201d and \\u201cSpace Ships\\u201d by Viktor Hahn (CC BY 4.0)","https://v-ktor.itch.io/space-ships"]');
   // audio credits (CC BY 4.0 needs the Kevin MacLeod line; the rest are CC0 or original)
   s = swap(s, '["3D engine","three.js (MIT licence)","https://threejs.org"]', '["Music","\\u201cLost Frontier\\u201d, \\u201cSpace 1990-B\\u201d, \\u201cLightless Dawn\\u201d, \\u201cClash Defiant\\u201d and \\u201cVolatile Reaction\\u201d by Kevin MacLeod (incompetech.com), licensed under Creative Commons: By Attribution 4.0","https://creativecommons.org/licenses/by/4.0/"],["More music","\\u201cSpace Boss Battle\\u201d by MintoDog (CC0); Drift, Neon Run, Afterburn and Titan are original","https://opengameart.org/content/space-boss-battle"],["Sound effects","\\u201cSci-Fi Sounds\\u201d by Kenney (CC0)","https://kenney.nl/assets/sci-fi-sounds"],["3D engine","three.js (MIT licence)","https://threejs.org"]');
@@ -325,10 +364,10 @@ const swap = (s, a, b) => {
   // power-matched difficulty (scale.js): boss HP from the player's DPS and health; after wave 10 enemy HP and damage keep pace with upgrades
   s = swap(s, "function yn(n,e,t,i={}){", fs.readFileSync(__dirname + "/scale.js", "utf8") + "\nfunction yn(n,e,t,i={}){e===n.player&&(t*=$eDmg(n));");
   s = swap(s, "spawnEnemy(n,e,t,i){return Yo(S,n,e,t,i)}", "spawnEnemy(n,e,t,i){return Yo(S,n,e,t,$eHp(S,i??1))}");
-  // after wave 10 enemies arrive in packs of 10-12 around one point every 4 s (sooner if the field is clear), held while 30+ are alive
+  // after wave 10 enemies arrive in packs of 10-12 around one point every 4 s (sooner if the field is clear), spawning holds at 400 alive enemies (all waves)
   s = swap(s, "if(e.spawnTimer-=t,e.spawnTimer<=0)", "if(e.spawnTimer-=t,e.wave>10&&e.spawnTimer>.6&&!n.enemies.some(i=>!i.dead&&!i.custom)&&(e.spawnTimer=.6),e.spawnTimer<=0)");
   s = swap(s, "let i=e.queue.shift(),s=N_(n);for(let r=0;r<i.n;r++)n.spawnEnemy(i.kind,s.x+r%2*40-20,s.z+r*30,e.comp.hpScale);e.spawnTimer=e.comp.boss?5:e.wave>20?.35:.6",
-    "let P=e.wave>10&&!e.comp.boss;if(P&&n.enemies.filter(i=>!i.dead&&!i.custom).length>=30)e.spawnTimer=.5;else{let k=P?Math.min(e.queue.length,10+Math.floor(Math.random()*3)):1,s=N_(n);for(let j=0;j<k;j++){let i=e.queue.shift(),a=j/k*6.283,d=j?90+Math.random()*70:0;for(let r=0;r<i.n;r++)n.spawnEnemy(i.kind,s.x+Math.cos(a)*d+r%2*40-20,s.z+Math.sin(a)*d+r*30,e.comp.hpScale)}e.spawnTimer=e.comp.boss?5:P?4:.6}");
+    "let P=e.wave>10&&!e.comp.boss;if(!e.comp.boss&&n.enemies.filter(i=>!i.dead&&!i.custom).length>=400)e.spawnTimer=.5;else{let k=P?Math.min(e.queue.length,10+Math.floor(Math.random()*3)):1,s=N_(n);for(let j=0;j<k;j++){let i=e.queue.shift(),a=j/k*6.283,d=j?90+Math.random()*70:0;for(let r=0;r<i.n;r++)n.spawnEnemy(i.kind,s.x+Math.cos(a)*d+r%2*40-20,s.z+Math.sin(a)*d+r*30,e.comp.hpScale)}e.spawnTimer=e.comp.boss?5:P?4:.6}");
   // boss waves end with the boss: once it's dead its leftover minions are destroyed too
   s = swap(s, 'else n.enemies.some(i=>!i.dead)||(e.state="break"', 'else e.comp.boss&&!n.enemies.some(i=>i.boss&&!i.dead)&&n.enemies.forEach(i=>i.dead||i.custom||yn(n,i,1e9,{silent:!0})),n.enemies.some(i=>!i.dead)||(e.state="break"');
   s = swap(s, "onWaveStart(n,e){S.waveLabel", "onWaveStart(n,e){n<=10&&($ref=null),n===10&&$refAt(S),S.waveLabel");
