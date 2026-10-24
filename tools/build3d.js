@@ -343,6 +343,7 @@ const swap = (s, a, b) => {
   s = swap(s, "function Tf(n,e,t){let i={uTime:{value:0},uCam:{value:new U}}", "var $SKYIMG=" + JSON.stringify(skyImg) + ";\n" + fs.readFileSync(__dirname + "/sky.js", "utf8") + fs.readFileSync(__dirname + "/cam.js", "utf8") + "\nfunction Tf(n,e,t){$camSel();let i={uTime:{value:0},uCam:{value:new U},...$skyU()}");
   // Settings > Camera (cam.js): third-person chase camera; WASD and dash turn with it, the sky stretches to the horizon
   s = swap(s, '<label for="setSens">', '<label for="setCam">Camera</label><select id="setCam"><option value="top">Top-down</option><option value="chase">Third person (behind the ship)</option></select>\n      <label for="setSens">');
+  s = swap(s, 'shake:1,autoSell:!0,keys:{...Yh}}', 'shake:1,autoSell:!0,cam:"top",keys:{...Yh}}'); // new saves start top-down
   s = swap(s, "let m=h+(f-h)*.18,y=d+(u-d)*.18,g=l.zoomTarget;", "let C=$chase(),m=C?h:h+(f-h)*.18,y=C?d:d+(u-d)*.18,g=l.zoomTarget;");
   s = swap(s, "s.position.copy(yf).multiplyScalar(l.zoom).add(l.target);let E=", "$camRig(l,s,c,C),C||s.position.copy(yf).multiplyScalar(l.zoom).add(l.target);let E=");
   s = swap(s, "l.shakeAmt*=Math.exp(-c*7),s.lookAt(l.target)}", "l.shakeAmt*=Math.exp(-c*7),s.lookAt(C?$camAt:l.target)}");

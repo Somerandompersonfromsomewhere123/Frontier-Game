@@ -1,12 +1,16 @@
 // ---- Voidbreakers: Settings > Camera. "chase" is a third-person camera behind the ship that turns with it; "top" is the original view ----
 let $camYaw = null, $camSky = 1;
 const $camAt = new U(), $camF = new U();
-function $chase() { return S.state === "play" && S.save?.settings?.cam === "chase"; }
+function $chase() {
+  const st = S.save?.settings;
+  if (st && !st.camV) (st.cam = "top"), (st.camV = 1); // one-time reset: older saves that picked chase while testing go back to top-down
+  return S.state === "play" && st?.cam === "chase";
+}
 function $camSel() {
   const sel = document.getElementById("setCam");
   if (!sel || sel.onchange) return;
   sel.value = S.save?.settings?.cam === "chase" ? "chase" : "top";
-  sel.onchange = () => { S.save.settings.cam = sel.value; Ft(Ct, S.save); };
+  sel.onchange = () => { S.save.settings.cam = sel.value; S.save.settings.camV = 1; Ft(Ct, S.save); };
 }
 // runs every rig update; C = chase this frame. Chase: behind and above the ship, yaw lagging its heading, looking a little ahead.
 // The tilted view sees much further than top-down, so the far plane, the nebula plane ($camSky) and the star wrap box (uFwd) reach ahead.
