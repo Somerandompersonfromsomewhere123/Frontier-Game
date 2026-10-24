@@ -7,7 +7,12 @@ const $SKYT = [
   ["Galactic Core", null, .6, [[.60, .45, .30], [.95, .80, .55], [.25, .20, .30]], 1],
   ["Ember Nebula", null, .55, [[.70, .40, .12], [1, .75, .35], [.30, .15, .08]], 2],
   ["Crimson Rift", null, .55, [[.60, .15, .15], [.95, .45, .40], [.25, .05, .10]], 3],
-  // procedural palettes: join the photo maps in the random rotation after wave 50
+  ["Supernova Rings", null, .55, [[.25, .35, .60], [.95, .60, .55], [.10, .15, .30]], 4],
+  ["Helix Eye", null, .55, [[.55, .35, .20], [.40, .70, .95], [.25, .10, .08]], 5],
+  ["Event Horizon", null, .6, [[.40, .20, .40], [.95, .45, .60], [.12, .08, .15]], 6],
+  ["Scarlet Expanse", null, .5, [[.65, .12, .10], [1, .40, .30], [.20, .04, .05]], 7],
+  ["Deep Field", null, .6, [[.30, .35, .40], [.80, .75, .60], [.10, .12, .15]], 8],
+  // procedural palettes: join the photo maps in the random rotation after wave 100
   ["Blood Moon Reach", [[.012, .002, .004], [.28, .02, .05], [.10, .02, .12], [.70, .08, .10], [.40, .05, .30], [1, .45, .10], [1, .60, .40]], .38, [[.60, .18, .12], [.95, .50, .25], [.30, .08, .12]]],
   ["Emerald Drift", [[.002, .010, .008], [.02, .18, .10], [.01, .10, .22], [.10, .45, .25], [.05, .40, .45], [.75, .85, .20], [.40, .95, .70]], .55, [[.20, .50, .35], [.70, .85, .40], [.10, .25, .30]]],
   ["The Abyss", [[.001, .001, .004], [.04, .02, .10], [.01, .04, .10], [.15, .04, .25], [.02, .12, .20], [.30, .15, .50], [.40, .30, .80]], .4, [[.20, .20, .35], [.35, .30, .50], [.08, .08, .18]]],
@@ -45,10 +50,10 @@ function $skyShow(i) {
   pl.forEach((c, k) => u[["uPa", "uPb", "uPc"][k]].value.fromArray(c));
   u.uOff.value.set(Math.random() * 9, Math.random() * 9, 0); // new cloud layout each visit
 }
-// sector for a wave: home for 1-10, the four photo maps in order for 11-50, then random (never the same twice running)
+// sector for a wave: home for 1-10, the photo maps in order (waves 11-100), then random (never the same twice running)
 function $skyFor(w) {
   const k = Math.floor((w - 1) / 10);
-  if (k < 5) return k;
+  if (k <= $SKYIMG.length) return k;
   const pick = $SKYT.map((_, i) => i).filter((i) => i && i !== $skyI);
   return pick[Math.floor(Math.random() * pick.length)];
 }

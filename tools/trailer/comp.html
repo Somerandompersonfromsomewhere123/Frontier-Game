@@ -1,0 +1,177 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Saira+Stencil+One&family=Barlow+Semi+Condensed:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>html,body{margin:0;background:#000}canvas{display:block}</style></head>
+<body><canvas id="c" width="1920" height="1080"></canvas>
+<script>
+// Trailer compositor: render(frame) draws one 1920x1080 frame from the extracted clip frames plus the motion graphics.
+// Driven by comp.js, which passes the timeline (TL), frame counts per clip (CNT) and the frames folder (BASE).
+const W = 1920, H = 1080, cv = document.getElementById("c"), x = cv.getContext("2d");
+const Y = "#f5b623", K = "#0d0f12", C = "#38f6ff", RED = "#ff2d4a", T1 = '"Saira Stencil One"', T2 = '"Barlow Semi Condensed"';
+let TL, CNT, BASE, FPS;
+const cl = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v)), lerp = (a, b, t) => a + (b - a) * t;
+const eo = (t) => 1 - (1 - cl(t)) ** 3, eio = (t) => (t = cl(t), t < .5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2);
+const back = (t) => { t = cl(t); const c1 = 1.7, c3 = c1 + 1; return 1 + c3 * (t - 1) ** 3 + c1 * (t - 1) ** 2; };
+const win = (t, a, b, fi = .25, fo = .25) => cl((t - a) / fi) * cl((b - t) / fo); // fade in/out window
+let sd = 1; const rnd = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
+const STARS = Array.from({ length: 900 }, () => ({ a: rnd() * 6.283, r: rnd(), z: rnd(), h: rnd() }));
+const img = (src) => new Promise((res) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; });
+const still = {};
+async function frameOf(clip, tc) {
+  if (clip === "tree") return still.tree ||= await img(BASE + "/../clips/tree.png");
+  const n = CNT[clip] || 1, k = cl(Math.floor(tc * FPS) + 1, 1, n);
+  return img(`${BASE}/${clip}/${String(k).padStart(5, "0")}.jpg`);
+}
+function draw(im, zoom = 1, ox = 0, oy = 0, a = 1) {
+  if (!im) return;
+  const s = Math.max(W / im.width, H / im.height) * zoom, w = im.width * s, h = im.height * s;
+  x.globalAlpha = a; x.drawImage(im, (W - w) / 2 + ox, (H - h) / 2 + oy, w, h); x.globalAlpha = 1;
+}
+function text(s, px, py, size, { font = T1, col = "#fff", align = "left", sp = 0, a = 1, base = "alphabetic", weight = "" } = {}) {
+  x.save(); x.globalAlpha *= a; x.font = `${weight} ${size}px ${font}`; x.letterSpacing = sp + "px"; x.textAlign = align; x.textBaseline = base; x.fillStyle = col; x.shadowColor = "rgba(0,0,0,.75)"; x.shadowBlur = size * .25; x.fillText(s, px, py); const m = x.measureText(s).width; x.restore(); return m;
+}
+// big title with a chromatic split that settles (k = 1 at impact, 0 when settled)
+function slam(s, px, py, size, k, a = 1, font = T1) {
+  x.save(); x.globalCompositeOperation = "lighter";
+  const d = 18 * k;
+  text(s, px - d, py, size, { font, col: "rgba(255,45,74,.9)", align: "center", a: a * k });
+  text(s, px + d, py, size, { font, col: "rgba(56,246,255,.9)", align: "center", a: a * k });
+  x.restore();
+  text(s, px, py, size, { font, col: "#fff", align: "center", a });
+}
+function stripes(px, py, w, h, off = 0, a = 1, c1 = Y, c2 = K) {
+  x.save(); x.globalAlpha = a; x.beginPath(); x.rect(px, py, w, h); x.clip(); x.fillStyle = c2; x.fillRect(px, py, w, h); x.fillStyle = c1;
+  for (let i = -h * 2 + (off % (h * 1.6)); i < w + h; i += h * 1.6) { x.beginPath(); x.moveTo(px + i, py + h); x.lineTo(px + i + h * .8, py + h); x.lineTo(px + i + h * 1.6, py); x.lineTo(px + i + h * .8, py); x.fill(); }
+  x.restore();
+}
+function plate(px, py, w, h, col, a = 1) { x.save(); x.globalAlpha = a; x.fillStyle = col; x.beginPath(); x.moveTo(px, py); x.lineTo(px + w, py); x.lineTo(px + w - h * .35, py + h); x.lineTo(px, py + h); x.fill(); x.restore(); }
+// lower-third tag: yellow plate with the name, dark kicker above, sliding in from the left
+function tag(name, kick, lt, col = Y) {
+  const a = win(lt, 0, 99, .12), s = eo(lt / .3), px = 110 - (1 - s) * 500, py = 860;
+  x.save(); x.font = `52px ${T1}`; const w = x.measureText(name).width + 90; x.restore();
+  plate(px - 30, py - 62, 340, 40, K, a * .85); text(kick, px, py - 32, 26, { font: T2, weight: 700, col: col === Y ? C : col, sp: 6, a });
+  plate(px - 30, py - 16, w, 74, col, a); text(name, px, py + 40, 52, { col: K, a });
+  stripes(px - 30, py + 64, Math.min(w, 260) * s, 10, lt * 60, a);
+}
+function header(s, sub, t, a0, a1) {
+  const a = win(t, a0, a1, .25, .3), s1 = eo((t - a0) / .4);
+  stripes(80, 104, 14, 64, 0, a, Y, Y);
+  text(s, 112 - (1 - s1) * 60, 152, 54, { a }); sub && text(sub, 114, 194, 28, { font: T2, weight: 600, col: C, sp: 5, a: a * cl((t - a0 - .15) / .3) });
+}
+function brackets(a) {
+  x.save(); x.globalAlpha = a * .55; x.strokeStyle = C; x.lineWidth = 3; const m = 46, L = 70;
+  for (const [cx, cy, sx, sy] of [[m, m, 1, 1], [W - m, m, -1, 1], [m, H - m, 1, -1], [W - m, H - m, -1, -1]]) { x.beginPath(); x.moveTo(cx, cy + sy * L); x.lineTo(cx, cy); x.lineTo(cx + sx * L, cy); x.stroke(); }
+  x.restore();
+}
+function warp(t, speed, col = "180,230,255", a = 1) {
+  x.save(); x.globalCompositeOperation = "lighter"; x.lineCap = "round";
+  for (const s of STARS) {
+    const z = (s.z + t * speed * .25) % 1, r = (s.r * .9 + .1) * (1 / (1.05 - z)) * 120, len = speed * 18 * z * z + 2;
+    const cx = W / 2 + Math.cos(s.a) * r, cy = H / 2 + Math.sin(s.a) * r * .8;
+    x.strokeStyle = `rgba(${s.h < .2 ? "255,200,140" : col},${a * cl(z * 1.4)})`; x.lineWidth = 1 + z * 3;
+    x.beginPath(); x.moveTo(cx, cy); x.lineTo(cx - Math.cos(s.a) * len, cy - Math.sin(s.a) * len * .8); x.stroke();
+  }
+  x.restore();
+}
+function typed(s, t, a0, px, py, size, opt) { const n = Math.floor(cl((t - a0) / (s.length * .045)) * s.length); const w = text(s.slice(0, n), px, py, size, opt); if (n < s.length && Math.floor(t * 8) % 2) x.fillStyle = C, x.fillRect(px + (opt.align === "center" ? w / 2 : w) + 8, py - size * .8, size * .45, size * .85); }
+const grain = document.createElement("canvas"); grain.width = grain.height = 256;
+{ const g = grain.getContext("2d"), d = g.createImageData(256, 256); for (let i = 0; i < d.data.length; i += 4) { const v = Math.random() * 255; d.data[i] = d.data[i + 1] = d.data[i + 2] = v; d.data[i + 3] = 255; } g.putImageData(d, 0, 0); }
+function finish(t, bars) {
+  const v = x.createRadialGradient(W / 2, H / 2, H * .35, W / 2, H / 2, H * .95); v.addColorStop(0, "rgba(0,0,0,0)"); v.addColorStop(1, "rgba(0,0,0,.6)"); x.fillStyle = v; x.fillRect(0, 0, W, H);
+  x.save(); x.globalAlpha = .045; x.globalCompositeOperation = "overlay"; const ox = (t * 977) % 256, oy = (t * 613) % 256; x.translate(-ox, -oy); x.fillStyle = x.createPattern(grain, "repeat"); x.fillRect(0, 0, W + 256, H + 256); x.restore();
+  if (bars) { x.fillStyle = "#000"; x.fillRect(0, 0, W, 54 * bars); x.fillRect(0, H - 54 * bars, W, 54 * bars); }
+}
+const IMPACT = [4, 14, 20, 24, 32, 38, 42, 48, 55];
+async function render(f) {
+  const t = f / FPS;
+  x.globalCompositeOperation = "source-over"; x.filter = "none"; x.fillStyle = "#000"; x.fillRect(0, 0, W, H);
+  const s = TL.find((s) => t >= s.t0 && t < s.t1);
+  if (s) {
+    const lt = t - s.t0, d = s.t1 - s.t0, p = lt / d, z = s.zoom ? lerp(s.zoom[0], s.zoom[1], eo(p)) : 1;
+    x.filter = s.blur ? "blur(10px) brightness(.42) saturate(1.2)" : "contrast(1.08) saturate(1.15)";
+    if (s.still) { const im = await frameOf("tree", 0); x.filter = "brightness(.8) contrast(1.05)"; draw(im, 1.32, lerp(260, -260, eio(p)), lerp(40, -40, p)); }
+    else if (s.split) {
+      const a = await frameOf(s.clip, s.at + lt), b = await frameOf(s.split, s.splitAt + lt), sx = W / 2 + 60 - (1 - eo(lt / .5)) * W * .6;
+      draw(a, 1.15, -W * .22);
+      x.save(); x.beginPath(); x.moveTo(sx + 90, 0); x.lineTo(W, 0); x.lineTo(W, H); x.lineTo(sx - 90, H); x.clip(); draw(b, 1.15, W * .22); x.restore();
+      x.filter = "none"; x.strokeStyle = Y; x.lineWidth = 8; x.beginPath(); x.moveTo(sx + 90, 0); x.lineTo(sx - 90, H); x.stroke();
+    } else draw(await frameOf(s.clip, s.at + lt), z);
+    x.filter = "none";
+    // cut flash: strong on the music's impacts, a light blink on other cuts
+    const big = IMPACT.some((i) => Math.abs(i - s.t0) < .01), fl = big ? .75 * (1 - cl(lt / .35)) : .2 * (1 - cl(lt / .1));
+    if (fl > 0) { x.fillStyle = `rgba(255,255,255,${fl})`; x.fillRect(0, 0, W, H); }
+    overlays(s, t, lt, p);
+  } else overlays(null, t, 0, 0);
+  finish(t, t > 4 && t < 55 ? 1 : 0);
+  return cv.toDataURL("image/jpeg", .93);
+}
+function overlays(s, t, lt, p) {
+  // 0-4 intro: warp field and two typed lines, the warp speeds up into the title flash
+  if (t < 4) {
+    warp(t, 1 + t ** 2.2 * .9, "160,220,255", cl(t / .8));
+    typed("THE FRONTIER IS FALLING.", t, .4, W / 2, H / 2 - 20, 64, { font: T2, weight: 800, align: "center", sp: 10, a: win(t, .4, 2.1, .1, .25) });
+    typed("ONLY THE VOIDBREAKERS STAND.", t, 2.2, W / 2, H / 2 - 20, 64, { font: T2, weight: 800, align: "center", sp: 10, col: Y, a: win(t, 2.2, 3.85, .1, .15) });
+    if (t > 3.6) { x.fillStyle = `rgba(255,255,255,${cl((t - 3.6) / .4)})`; x.fillRect(0, 0, W, H); }
+  }
+  if (t >= 4 && t < 8) {
+    const a = win(t, 4, 7.9, .01, .4), k = 1 - eo((t - 4) / .6), sc = lerp(1.5, 1, back((t - 4) / .45));
+    x.save(); x.translate(W / 2, H / 2); x.scale(sc, sc); x.translate(-W / 2, -H / 2); slam("VOIDBREAKERS", W / 2, H / 2 + 40, 190, k, a); x.restore();
+    const b = cl((t - 4.5) / .4) * a; stripes(W / 2 - 420 * b, H / 2 + 80, 840 * b, 16, t * 80, a);
+    text("THE LAST FRONTIER", W / 2, H / 2 + 160, 52, { font: T2, weight: 700, align: "center", sp: 26 * eo((t - 4.6) / .8) + 8, col: Y, a: cl((t - 4.6) / .5) * a });
+  }
+  if (s && s.word) {
+    const sub = { PILOT: "FLY 40+ SHIPS", FIGHT: "ENDLESS WAVES", EVOLVE: "SEVEN TIERS OF POWER" }[s.word], a = win(lt, 0, 2, .05, .2), e = eo(lt / .35);
+    slam(s.word, W / 2, H / 2 + 70 + (1 - e) * 40, 230, 1 - eo(lt / .5), a);
+    text(sub, W / 2, H / 2 + 150, 40, { font: T2, weight: 700, align: "center", sp: 14, col: Y, a: a * cl((lt - .15) / .3) });
+  }
+  if (t >= 14 && t < 20) { header("THE HANGAR", "40+ SHIPS · 6 CLASSES · 7 TIERS", t, 14, 20); brackets(win(t, 14, 20)); }
+  if (s && s.tag) tag(s.tag[0], s.tag[1], lt);
+  if (t >= 20 && t < 24) {
+    const a = win(t, 20.1, 23.9, .3, .3);
+    x.fillStyle = `rgba(13,15,18,${.6 * a})`; x.fillRect(0, H / 2 - 120, W, 240);
+    slam("EVOLVE YOUR FLEET", W / 2, H / 2 + 30, 120, 1 - eo((t - 20) / .5), a);
+    text("A BRANCHING TREE FROM TIER I TO TIER VII", W / 2, H / 2 + 90, 34, { font: T2, weight: 700, align: "center", sp: 10, col: C, a });
+  }
+  if (t >= 24 && t < 32) { header("ARSENAL", "DOZENS OF WEAPONS · EVERY CLASS FIGHTS DIFFERENTLY", t, 24, 32); brackets(win(t, 24, 32)); }
+  if (t >= 32 && t < 37) {
+    const a = win(t, 32.25, 36.9, .3, .3), lo = cl((t - 32.6) / .3) * a;
+    plate(W / 2 - 330, 92, 660, 96, K, a * .85); slam("TWO WAYS TO FLY", W / 2, 165, 72, 1 - eo((t - 32.25) / .5), a);
+    plate(140, 900, 380, 74, Y, lo); text("TOP-DOWN", 170, 955, 50, { col: K, a: lo });
+    plate(W - 560, 900, 470, 74, C, lo); text("THIRD PERSON", W - 530, 955, 50, { col: K, a: lo });
+    plate(W - 560, 846, 150, 44, RED, lo); text("NEW", W - 535, 879, 30, { font: T2, weight: 800, sp: 6, a: lo });
+  }
+  if (t >= 37 && t < 38) {
+    x.fillStyle = "#02040c"; x.fillRect(0, 0, W, H);
+    const lt2 = t - 37; warp(lt2 + 2, 6 + lt2 * 30, "150,220,255");
+    x.save(); x.globalCompositeOperation = "lighter"; const g = x.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, 500); g.addColorStop(0, `rgba(120,200,255,${.5 * lt2})`); g.addColorStop(1, "rgba(0,0,0,0)"); x.fillStyle = g; x.fillRect(0, 0, W, H); x.restore();
+    text("HYPERSPACE JUMP", W / 2, H / 2 + 20, 84, { align: "center", sp: 12, a: win(lt2, 0, 1, .15, .2) });
+  }
+  if (t >= 38 && t < 42) header("A NEW SECTOR EVERY 10 WAVES", "12 SECTORS · GALAXY SKIES", t, 38, 42);
+  if (s && s.boss) {
+    const a = win(lt, 0, s.t1 - s.t0, .05, .15), e = eo(lt / .3);
+    stripes(0, 54, W, 18, -t * 300, a * .9, RED, K); stripes(0, H - 118, W, 22, t * 300, a * .9, RED, K);
+    text("WARNING · CAPITAL SHIP", W / 2, H - 285, 34, { font: T2, weight: 800, align: "center", sp: 18, col: RED, a: a * (Math.floor(t * 6) % 2 ? 1 : .55) });
+    slam(s.boss, W / 2, H - 170 + (1 - e) * 30, 104, 1 - e, a);
+    if (s.killAt != null && lt > s.killAt) { const k = lt - s.killAt; x.save(); x.translate(W / 2, H / 2); x.rotate(-.08); x.scale(lerp(1.8, 1, back(k / .3)), lerp(1.8, 1, back(k / .3))); plate(-330, -70, 660, 130, Y, cl(k / .1)); text("DESTROYED", 0, 40, 110, { align: "center", col: K, a: cl(k / .1) }); x.restore(); }
+  }
+  if (t >= 42 && t < 48) header("BOSS FIGHTS", "9 CAPITAL SHIPS · A NEW ONE EVERY 5 WAVES", t, 42, 48);
+  if (t >= 52 && t < 55) {
+    const l1 = t - 52, l2 = t - 53.3;
+    slam("THEY ADAPT.", W / 2, H / 2 - 10, 150, 1 - eo(l1 / .4), win(l1, 0, 1.3, .05, .15));
+    slam("SO DO YOU.", W / 2, H / 2 - 10, 150, 1 - eo(l2 / .4), win(l2, 0, 1.7, .05, .2));
+    text("ENEMIES SCALE WITH YOUR POWER", W / 2, H / 2 + 70, 36, { font: T2, weight: 700, align: "center", sp: 12, col: Y, a: win(l1, .2, 3, .3, .2) });
+  }
+  if (t >= 55) {
+    const l = t - 55, a = cl(l / .3) * cl((6 - l) / .9), k = 1 - eo(l / .7);
+    warp(l + 4, 1.2, "160,220,255", .5 * a);
+    x.save(); x.translate(W / 2, H / 2); const sc = lerp(1.3, 1, back(l / .5)); x.scale(sc, sc); x.translate(-W / 2, -H / 2); slam("VOIDBREAKERS", W / 2, H / 2 - 40, 200, k, a); x.restore();
+    stripes(W / 2 - 440, H / 2 + 2, 880, 18, l * 80, a);
+    text("THE LAST FRONTIER", W / 2, H / 2 + 86, 54, { font: T2, weight: 700, align: "center", sp: 26, col: Y, a });
+    const b = cl((l - .8) / .4) * a;
+    plate(W / 2 - 330, H / 2 + 150, 660, 78, Y, b); text("PLAY FREE IN YOUR BROWSER", W / 2 - 18, H / 2 + 203, 44, { col: K, align: "center", a: b });
+    text("OPEN SOURCE · github.com/Somerandompersonfromsomewhere123/Frontier-Game", W / 2, H / 2 + 290, 30, { font: T2, weight: 600, align: "center", sp: 3, col: C, a: cl((l - 1.2) / .4) * a });
+  }
+}
+window.init = async (tl, cnt, base, fps) => { TL = tl; CNT = cnt; BASE = base; FPS = fps; await document.fonts.load(`100px ${T1}`); await document.fonts.load(`700 40px ${T2}`); await document.fonts.load(`800 40px ${T2}`); await document.fonts.load(`600 40px ${T2}`); return document.fonts.check(`100px ${T1}`); };
+window.render = render;
+</script></body></html>

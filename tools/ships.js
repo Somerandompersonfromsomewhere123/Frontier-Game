@@ -133,3 +133,72 @@ function $afterU(n, z, t) {
   n.fx.shockwave(D.x, D.z, 150, z.c, .4); n.fx.burst(D.x, D.z, { n: 24, color: z.c, speed: 300, life: .5, size: 8 }); n.shake(2);
   return !0;
 }
+
+// VALKYRIE PRIME extras. F = Halo Breaker: a spinning ring of light flies to the cursor, cutting through everything once,
+// then collapses into a singularity that drags enemies in and detonates (hit-stop, shockwaves, shards). Hold Shift = booster.
+var $V3 = { valkyrieprime: { name: "Halo Breaker", cost: 35, cd: 5, dmg: 90, boom: 320, color: 0xffcf6a } };
+function $v3(n, e, i, t) {
+  const V = $V3[e.shipId];
+  if (!V) return;
+  e.cdHalo = Math.max(0, (e.cdHalo || 0) - t);
+  if (!De.pressed.has("KeyF")) return;
+  if (e.cdHalo > 0 || e.energy < V.cost) return n.ui.denied("slotHalo");
+  e.energy -= V.cost; e.cdHalo = V.cd;
+  const k = i.primary.dmg / 6, a = xt(e.x, e.z, n.input.wx, n.input.wz), L = Math.max(260, Math.min(900, Math.hypot(n.input.wx - e.x, n.input.wz - e.z)));
+  const glow = (c, b) => new Ye({ color: new ge(c).multiplyScalar(b), transparent: !0, blending: 2, depthWrite: !1 });
+  const g = new Mt(), ring = new Pe(new jt(1, .1, 8, 56), glow(V.color, 3)), ring2 = new Pe(new jt(1, .05, 6, 48), glow(0x59d8ff, 3)), core = new Pe(new Rt(1, 12, 8), glow(0xffffff, 4));
+  ring.rotation.x = Math.PI / 2; ring2.rotation.x = Math.PI / 2 + .5;
+  g.add(ring, ring2, core); g.position.set(e.x, 12, e.z); n.scene.add(g);
+  $Z.push({ k: "halo", t: 0, x: e.x, z: e.z, vx: Math.cos(a) * 1000, vz: Math.sin(a) * 1000, fly: L / 1000, col: .45, r: 28, hit: new Set(), g, ring, ring2, core, dmg: V.dmg * k, boom: V.boom * k, c: V.color });
+  e.vx -= Math.cos(a) * 140; e.vz -= Math.sin(a) * 140; // recoil
+  n.fx.burst(e.x + Math.cos(a) * 40, e.z + Math.sin(a) * 40, { n: 18, color: V.color, speed: 320, life: .3, size: 8 });
+  n.audio.play("warp", e.x, e.z, .7); n.shake(4);
+}
+function $haloU(n, z, t) {
+  const c = gM(z.c);
+  z.ring.rotation.z += t * 14; z.ring2.rotation.z -= t * 9; z.ring2.rotation.y += t * 3;
+  if (z.fly > 0) {
+    z.fly -= t; z.x += z.vx * t; z.z += z.vz * t; z.r = Math.min(70, z.r + t * 90);
+    z.g.position.set(z.x, 12, z.z); z.ring.scale.setScalar(z.r); z.ring2.scale.setScalar(z.r * .75); z.core.scale.setScalar(7 + Math.sin(z.fly * 40) * 2);
+    for (let q = 0; q < 4; q++) { const b = Math.random() * 6.283; n.fx.spawn(z.x + Math.cos(b) * z.r, 10, z.z + Math.sin(b) * z.r, -z.vx * .15, 0, -z.vz * .15, .35, 9, .5, ...c); }
+    $near(n, z.x, z.z, z.r + 60, (en) => {
+      if (z.hit.has(en) || Math.hypot(en.x - z.x, en.z - z.z) > z.r + (en.r || 0)) return;
+      z.hit.add(en); yn(n, en, z.dmg, { fromPlayer: !0, x: z.x, z: z.z });
+      n.fx.burst(en.x, en.z, { n: 10, color: z.c, speed: 280, life: .3, size: 6 }); n.shake(1.5);
+    });
+    z.fly <= 0 && n.audio.play("charge", z.x, z.z, .7);
+    return !1;
+  }
+  z.col -= t;
+  const f = Math.max(0, z.col / .45);
+  z.ring.scale.setScalar(z.r * f + 4); z.ring2.scale.setScalar(z.r * .75 * f + 3); z.core.scale.setScalar(8 + 16 * (1 - f));
+  for (let q = 0; q < 3; q++) { const b = Math.random() * 6.283; n.fx.spawn(z.x + Math.cos(b) * 230, 10, z.z + Math.sin(b) * 230, -Math.cos(b) * 520, 0, -Math.sin(b) * 520, .42, 8, .5, ...c); }
+  $near(n, z.x, z.z, 280, (en) => { if (en.heavy) return; const d = Math.hypot(z.x - en.x, z.z - en.z) || 1, s = Math.min(d - 12, 300 * t); s > 0 && (en.x += (z.x - en.x) / d * s, en.z += (z.z - en.z) / d * s); });
+  if (z.col > 0) return !1;
+  ds(n, z.x, z.z, 240, z.boom, "player", { fromPlayer: !0, push: 500 });
+  n.fx.shockwave(z.x, z.z, 280, z.c, .5); n.fx.shockwave(z.x, z.z, 160, 0xffffff, .3); n.fx.flash(z.x, z.z, z.c, 4, .2);
+  n.fx.burst(z.x, z.z, { n: 50, color: z.c, speed: 520, life: .7, size: 10, drag: 3 });
+  for (let q = 0; q < 8; q++) n.weapons.spawn({ kind: "bolt", team: "player", x: z.x, z: z.z, angle: q * Math.PI / 4 + Math.random() * .3, speed: 1600, dmg: z.dmg * .5, life: .35, color: z.c, r: 4, len: 50, pierce: 2 });
+  n.audio.play("explodeBig", z.x, z.z, .8); n.shake(12);
+  if (!(n.slowT > 0)) n.timeScale = .25, n.slowT = .09; // hit-stop
+  n.scene.remove(z.g); z.g.traverse((o) => o.isMesh && (o.geometry.dispose(), o.material.dispose()));
+  return !0;
+}
+// booster: speed multiplier for the movement code; drains energy faster than it regenerates (~4 s from full)
+function $boost(n, e, t, o) {
+  const on = !!$V3[e.shipId] && (De.keys.has("ShiftLeft") || De.keys.has("ShiftRight")) && o > 0 && e.energy > 1;
+  on && !e.$bo && (n.shake(2), n.audio.play("dash", e.x, e.z, .5));
+  e.$bo = on;
+  if (!on) return 1;
+  e.energy = Math.max(0, e.energy - 45 * t);
+  const ca = Math.cos(e.angle), sa = Math.sin(e.angle);
+  for (const s of [-1, 1, -1, 1]) { const j = 34 + Math.random() * 14; n.fx.spawn(e.x - ca * j - sa * s * 12, 4, e.z - sa * j + ca * s * 12, -ca * 620 + e.vx * .2, 0, -sa * 620 + e.vz * .2, .28, 14, 2, .5, .9, 1.8); }
+  return 1.65;
+}
+function $v3Hud(m, E) {
+  const V = $V3[m.shipId], h = document.getElementById("slotHalo"), b = document.getElementById("slotBoost");
+  h.classList.toggle("hidden", !V); b.classList.toggle("hidden", !V);
+  if (!V) return;
+  E(h, V.name, Math.max((m.cdHalo || 0) / V.cd, 1 - Math.min(1, m.energy / V.cost)), !(m.cdHalo > 0) && m.energy >= V.cost, m.energy < V.cost);
+  E(b, m.$bo ? "Boosting" : "Boost", 0, !!m.$bo, m.energy <= 1);
+}

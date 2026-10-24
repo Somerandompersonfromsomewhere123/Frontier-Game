@@ -1,7 +1,9 @@
 // Builds Voidbreakers (5).html from (4).html: tier 5-6 ships use real 3D models ($M3) instead of sprite plates.
 const fs = require("fs");
 const { MODELS, finish } = require("./convert.js");
-const DIR = "D:/game assets", SRC = DIR + "/Voidbreakers_ The Last Frontier(4).html", DST = DIR + "/GAME.html";
+const { NodeIO } = require(__dirname + "/pp/node_modules/@gltf-transform/core");
+// sky photos in tools/maps, the untouched original game in tools/source; the playable build lands next to tools/
+const MAPS = __dirname + "/maps", SRC = __dirname + "/source/Voidbreakers_ The Last Frontier(4).html", DST = __dirname + "/../GAME.html";
 const SHIP = {
   colossus: "carrier03", titan: "cruiser03",
   railbreaker: "cruiser01", spectre: "pythagoras",
@@ -113,8 +115,25 @@ const swap = (s, a, b) => {
     M3[id] = await tint(id, finish(await MODELS[model](), model === "valkyrie_prime" ? -90 : 90));
     M3[id].H = hardpoints(M3[id]);
   }
-  // Valkyrie Prime: one gun on each of its six blade tips (Blender tip positions from valkyrie.blend)
-  M3.valkyrieprime.H.blades = [[2.2, 4.2, .15], [3.9, 2.8, -.08], [4.9, .8, -.39]].map(([bx, by, bz]) => [(by - .15) / 10.64, bx / 10.64, (bz - .82) / 10.64]);
+  // Valkyrie Prime: one gun on each of its six blade tips, measured from the model (forward-most vertex of each right-hand blade; glTF -z is the nose)
+  {
+    const D = M3.valkyrieprime, W = Math.max(D.mx[0] - D.mn[0], D.mx[2] - D.mn[2]), cx = (D.mx[0] + D.mn[0]) / 2;
+    const doc = await new NodeIO().read(__dirname + "/models/valkyrie_prime/valkyrie_prime.glb");
+    D.H.blades = ["Blade_Mid", "Blade_Outer", "Blade_Tip"].map((name) => {
+      const node = doc.getRoot().listNodes().find((n) => n.getName() === name), M = node.getWorldMatrix(), v = [0, 0, 0];
+      let t = null;
+      for (const pr of node.getMesh().listPrimitives()) {
+        const P = pr.getAttribute("POSITION");
+        for (let k = 0; k < P.getCount(); k++) {
+          P.getElement(k, v);
+          const p = [0, 1, 2].map((i) => M[i] * v[0] + M[4 + i] * v[1] + M[8 + i] * v[2] + M[12 + i]);
+          if (p[0] > 0 && (!t || p[2] < t[2])) t = p;
+        }
+      }
+      if (!t) throw new Error("no blade tip for " + name);
+      return [(-t[2] - cx) / W, t[0] / W, (t[1] - D.mx[1]) / W];
+    });
+  }
   // boss hulls: the three unused Viktor Hahn ships, recoloured hostile crimson
   for (const [key, model] of [["@carrier", "carrier01"], ["@lance", "destroyer03"], ["@warden", "corvette03"]]) M3[key] = await tint(key, finish(await MODELS[model](), 90), 0xff2d4a);
   // materials move into $m3M so bosses can reuse the same mesh and material cache
@@ -189,10 +208,17 @@ const swap = (s, a, b) => {
   // Afterimage: ability entry, its cast, the clone update in the zone loop, and enemies aiming at live clones
   s = swap(s, 'phaseshift:{name:"Phase Shift"', 'afterimage:{name:"Afterimage",cost:50,cd:8,desc:"Dash toward the cursor, leaving 2 decoy clones that draw enemy fire, then explode."},phaseshift:{name:"Phase Shift"');
   s = swap(s, 'phaseshift(n,M,w){', 'afterimage(n,M,w){$afterimage(n,M,w)}, phaseshift(n,M,w){');
-  s = swap(s, 'else if(z.k==="decoy"){', 'else if(z.k==="after"){$afterU(n,z,t)&&$Z.splice(i,1)}else if(z.k==="decoy"){');
+  s = swap(s, 'else if(z.k==="decoy"){', 'else if(z.k==="after"){$afterU(n,z,t)&&$Z.splice(i,1)}else if(z.k==="halo"){$haloU(n,z,t)&&$Z.splice(i,1)}else if(z.k==="decoy"){');
   s = swap(s, 'r<i&&(i=r,t=s)}return t}function Lp(', 'r<i&&(i=r,t=s)}for(let s of $AI){let r=Math.hypot(s.x-e.x,s.z-e.z)*.4;r<i&&(i=r,t=s)}return t}function Lp(');
   s = swap(s, '"starbreaker": ["Zenith", "Zenith_Orange"]', '"starbreaker": ["Zenith", "Zenith_Green"]');
   s = swap(s, 'n==="starbreaker"&&t.push(', '(n==="starbreaker"||n==="starcore"||n==="tempest"||n==="valkyrieprime")&&t.push(');
+  // Valkyrie Prime third weapon (F, Halo Breaker) and booster (hold Shift): ships.js $v3 / $boost, HUD slots beside the ability
+  s = swap(s, 'Zh(n,"drones")&&n.arsenal.toggleDrones()', '$v3(n,e,i,t),Zh(n,"drones")&&n.arsenal.toggleDrones()');
+  s = swap(s, 'let y=r*i.maxSpeed,g=a*i.maxSpeed,', 'let $b=$boost(n,e,t,o),y=r*i.maxSpeed*$b,g=a*i.maxSpeed*$b,');
+  s = swap(s, 'v=(o>0?i.accel:i.accel*.6)*t', 'v=(o>0?i.accel*$b:i.accel*.6)*t');
+  s = swap(s, '(e.dashT>0?2:0))*m;', '(e.dashT>0?2:0)+(e.$bo?1.8:0))*m;');
+  s = swap(s, 'let _=n.arsenal.droneCount();', '$v3Hud(m,E);let _=n.arsenal.droneCount();');
+  s = swap(s, '<div class="slot hidden" id="slotDrones">', '<div class="slot hidden" id="slotHalo"><kbd>F</kbd><span class="wname">Halo Breaker</span><div class="cd"></div></div>\n    <div class="slot hidden" id="slotBoost"><kbd>Shift</kbd><span class="wname">Boost</span><div class="cd"></div></div>\n    <div class="slot hidden" id="slotDrones">');
   // gentler bank when strafing with A/D: tilt capped at ~17 degrees instead of ~43
   s = swap(s, "f=Math.max(-.75,Math.min(.75,c*.06+h*.0016));", "f=Math.max(-.3,Math.min(.3,c*.03+h*.0007));");
   // shot colour climbs a rarity ladder with tier, so stronger ships read as stronger: green, cyan, blue, purple, pink, orange, red
@@ -203,9 +229,19 @@ const swap = (s, a, b) => {
   // sectors (sky.js): nebula and planet colours become uniforms; the user's galaxy photos are embedded as sky maps ($SKYIMG);
   // every 10th wave cleared plays a hyperspace jump screen that switches sector
   const skyImg = [];
-  for (const f of ["Blueeee.jpg", "milkyway.jpg", "exploring-the-mesmerizing-beauty-of-a-cosmic-nebula-illuminated-by-vibrant-orange-and-yellow-hues-in-deep-space-photo.jpg", "Red galaxy.jpg"])
+  // [file, trim top/right/bottom/left as fractions]: trims cut off watermarks and vignette corners, which mirrored tiling would repeat
+  for (const [f, t = [0, 0, 0, 0]] of [
+    ["64298.jpg"], ["wallnest-px_38565212.jpg", [.1, .1, .1, .1]],
+    ["exploring-the-mesmerizing-beauty-of-a-cosmic-nebula-illuminated-by-vibrant-orange-and-yellow-hues-in-deep-space-photo.jpg"],
+    ["red_nebula_stars_gpace_galaxy_sky_background_4k_hd_space.jpg"],
+    ["64023.jpg", [.05, 0, 0, 0]], ["64138.jpg", [0, 0, .04, 0]], ["64278.jpg", [0, 0, .14, 0]],
+    ["red_nebula_2560x1440.png"], ["wallnest-px_36633067.jpg"],
+  ]) {
+    const { width: w, height: h } = await sharp(MAPS + "/" + f).metadata();
+    const ex = { left: Math.round(w * t[3]), top: Math.round(h * t[0]), width: Math.round(w * (1 - t[1] - t[3])), height: Math.round(h * (1 - t[0] - t[2])) };
     // 2K: small photos are upscaled (lanczos) and lightly sharpened to hide the softening
-    skyImg.push((await sharp(DIR + "/" + f).resize(2048, 2048, { fit: "inside", kernel: "lanczos3" }).sharpen({ sigma: 0.8 }).jpeg({ quality: 92, chromaSubsampling: "4:4:4", mozjpeg: true }).toBuffer()).toString("base64"));
+    skyImg.push((await sharp(MAPS + "/" + f).extract(ex).resize(2048, 2048, { fit: "inside", kernel: "lanczos3" }).sharpen({ sigma: 0.8 }).jpeg({ quality: 92, chromaSubsampling: "4:4:4", mozjpeg: true }).toBuffer()).toString("base64"));
+  }
   s = swap(s, "function Tf(n,e,t){let i={uTime:{value:0},uCam:{value:new U}}", "var $SKYIMG=" + JSON.stringify(skyImg) + ";\n" + fs.readFileSync(__dirname + "/sky.js", "utf8") + fs.readFileSync(__dirname + "/cam.js", "utf8") + "\nfunction Tf(n,e,t){$camSel();let i={uTime:{value:0},uCam:{value:new U},...$skyU()}");
   // Settings > Camera (cam.js): third-person chase camera; WASD and dash turn with it, the sky stretches to the horizon
   s = swap(s, '<label for="setSens">', '<label for="setCam">Camera</label><select id="setCam"><option value="top">Top-down</option><option value="chase">Third person (behind the ship)</option></select>\n      <label for="setSens">');
