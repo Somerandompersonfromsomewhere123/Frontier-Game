@@ -104,8 +104,8 @@ const $ATK = {
 };
 function $spawnBoss(n, hp) {
   const roster = $BOSS.length + 1, idx = ((Math.round(n.director.wave / 5) - 1) % roster + roster) % roster;
-  if (idx === 0) return $bossName("ECLIPSE DREADNOUGHT"), Up(n, hp);
-  return $gbSpawn(n, $BOSS[idx - 1], hp);
+  if (idx === 0) return $bossName("ECLIPSE DREADNOUGHT"), Up(n, $bossHp(n, 6e3, hp));
+  return $gbSpawn(n, $BOSS[idx - 1], $bossHp(n, $BOSS[idx - 1].hp, hp));
 }
 function $gbSpawn(n, B, hp) {
   const i = n.player, a0 = Math.random() * Math.PI * 2;

@@ -128,9 +128,9 @@ const swap = (s, a, b) => {
   s = swap(s, "let t=n.boss;if(!t)return;", "let t=n.boss;if(!t)return;if(t.gb)return $gbU(n,t,e);");
   s = swap(s, 'g.dying>0?"Destroyed":g.phase===1?', 'g.gb?g.dying>0?"Destroyed":"Phase "+g.phase+" \\u00b7 "+g.desc:g.dying>0?"Destroyed":g.phase===1?');
   s = swap(s, '"Destroy the Eclipse Dreadnought"', '"Destroy the "+(S.boss.gb?S.boss.title:"Eclipse Dreadnought")');
-  // difficulty: every 5 waves the waves grow; rogue pilots from the ship tree (low tiers to wave 15, high after); a flood after wave 20
+  // difficulty: boss waves are the boss alone; every 5 waves the waves grow; rogue pilots from the ship tree (low tiers to wave 15, high after); a flood after wave 20
   s = swap(s, "function z_(n){let e=1+.12*(n-1);return n%5===0?{boss:!0,hpScale:1+.35*(n/5-1),drone:2+n,interceptor:0,hunter:0,frigate:0,rogue:0}:{boss:!1,hpScale:e,drone:3+n,interceptor:n>=2?1+Math.floor((n-2)/2):0,hunter:n>=3?1+Math.floor((n-3)/3):0,frigate:n>=4?1+Math.floor((n-4)/4):0,rogue:n>=6?Math.min(3,Math.floor((n-3)/3)):0}}",
-    "function z_(n){const T=Math.floor(n/5),m=1.25*(n>20?2+.08*(n-20):1+.2*T),c=x=>Math.round(x*m),e=1.5*(1+.12*(n-1)+.06*T+(n>20?.05*(n-20):0));return n%5===0?{boss:!0,hpScale:1.3*(1+.35*(n/5-1)),drone:c(2+n),interceptor:n>=10?T:0,hunter:n>=15?T-1:0,frigate:0,rogue:n>20?2:0}:{boss:!1,hpScale:e,drone:c(3+n),interceptor:n>=2?c(1+Math.floor((n-2)/2)):0,hunter:n>=3?c(1+Math.floor((n-3)/3)):0,frigate:n>=4?c(1+Math.floor((n-4)/4)):0,rogue:n<5?0:n<10?2:n<=20?3:Math.min(14,4+Math.floor((n-20)*.8))}}");
+    "function z_(n){const T=Math.floor(n/5),m=1.25*(n>20?2+.08*(n-20):1+.2*T),c=x=>Math.round(x*m),e=1.5*(1+.12*(n-1)+.06*T+(n>20?.05*(n-20):0));return n%5===0?{boss:!0,hpScale:1.3*(1+.35*(n/5-1)),drone:0,interceptor:0,hunter:0,frigate:0,rogue:0}:{boss:!1,hpScale:e,drone:c(3+n),interceptor:n>=2?c(1+Math.floor((n-2)/2)):0,hunter:n>=3?c(1+Math.floor((n-3)/3)):0,frigate:n>=4?c(1+Math.floor((n-4)/4)):0,rogue:n<5?0:n<10?2:n<=20?3:Math.min(14,4+Math.floor((n-20)*.8))}}");
   s = swap(s, "let h=Math.max(2,Math.min(7,1+Math.floor(n.director.wave/3)))", "let w=n.director.wave,h=w<=15?1+Math.floor(Math.random()*(w<10?2:3)):w<=20?4+Math.floor(Math.random()*2):5+Math.floor(Math.random()*3)");
   // drones spawn one at a time instead of in groups of 3-4
   s = swap(s, "let i=Math.min(t,3+e.length%2);e.push({kind:\"drone\"", "let i=1;e.push({kind:\"drone\"");
@@ -200,15 +200,32 @@ const swap = (s, a, b) => {
   s = swap(s, "primary:Gh(i.primary,", "primary:$tc(Gh(i.primary,");
   s = swap(s, ",(1+.05*r.primary)*l,1),secondary:Gh(i.secondary,(1+.12*r.secondary)*o,l,1-.06*r.secondary),", ",(1+.05*r.primary)*l,1),i.tier),secondary:$tc(Gh(i.secondary,(1+.12*r.secondary)*o,l,1-.06*r.secondary),i.tier),");
   s = swap(s, '["Tier 5-6 ship art","Original concept art by the Voidbreakers developer",""]', '["Tier 5-6 ship models","\\u201cProteron Ships\\u201d and \\u201cSpace Ships\\u201d by Viktor Hahn (CC BY 4.0)","https://v-ktor.itch.io/space-ships"]');
-  // sector themes (sky.js): nebula and planet colours become uniforms; waves 11, 21, 31... fade to a random palette
-  s = swap(s, "function Tf(n,e,t){let i={uTime:{value:0},uCam:{value:new U}}", fs.readFileSync(__dirname + "/sky.js", "utf8") + "\nfunction Tf(n,e,t){let i={uTime:{value:0},uCam:{value:new U},...$skyU()}");
-  s = swap(s, "uniform float uTime; varying vec3 vW;", "uniform float uTime; varying vec3 vW; uniform vec3 uK0, uK1, uK2, uK3, uK4, uK5, uK6, uOff; uniform float uDim;");
+  // sectors (sky.js): nebula and planet colours become uniforms; the user's galaxy photos are embedded as sky maps ($SKYIMG);
+  // every 10th wave cleared plays a hyperspace jump screen that switches sector
+  const skyImg = [];
+  for (const f of ["Blueeee.jpg", "milkyway.jpg", "exploring-the-mesmerizing-beauty-of-a-cosmic-nebula-illuminated-by-vibrant-orange-and-yellow-hues-in-deep-space-photo.jpg", "Red galaxy.jpg"])
+    skyImg.push((await sharp(DIR + "/" + f).resize(1280, 1280, { fit: "inside", withoutEnlargement: true }).jpeg({ quality: 82 }).toBuffer()).toString("base64"));
+  s = swap(s, "function Tf(n,e,t){let i={uTime:{value:0},uCam:{value:new U}}", "var $SKYIMG=" + JSON.stringify(skyImg) + ";\n" + fs.readFileSync(__dirname + "/sky.js", "utf8") + "\nfunction Tf(n,e,t){let i={uTime:{value:0},uCam:{value:new U},...$skyU()}");
+  s = swap(s, "uniform float uTime; varying vec3 vW;", "uniform float uTime; varying vec3 vW; uniform vec3 uK0, uK1, uK2, uK3, uK4, uK5, uK6, uOff; uniform float uDim, uImg; uniform sampler2D uTex;");
+  s = swap(s, "gl_FragColor = vec4(col, 1.0);", "if (uImg > 0.5) col = pow(texture2D(uTex, vW.xz / 9000.0 + uOff.xy).rgb, vec3(1.8)) * uDim * 0.6;\n        gl_FragColor = vec4(col, 1.0);");
+  s = swap(s, '<label for="setShake">', '<label for="setMap">Galaxy map</label><select id="setMap"></select>\n      <label for="setShake">');
+  s = swap(s, "onWaveClear(n){", "onWaveClear(n){n%10===0&&$skyJump(S,n+1);");
   s = swap(s, "vec3 p = vec3(vW.xz * 0.00018, uTime * 0.004);", "vec3 p = vec3(vW.xz * 0.00018 + uOff.xy, uTime * 0.004);");
   ["0.004, 0.006, 0.02", "0.13, 0.03, 0.25", "0.02, 0.16, 0.30", "0.45, 0.06, 0.35", "0.05, 0.35, 0.40", "0.95, 0.40, 0.12", "0.90, 0.50, 0.85"].forEach((c, k) => (s = swap(s, `vec3(${c})`, "uK" + k)));
   s = swap(s, "col = pow(col, vec3(1.12)) * 0.6;", "col = pow(col, vec3(1.12)) * uDim;");
   s = swap(s, "uniform vec3 uSun; uniform float uTime; varying vec3 vN; varying vec3 vP;", "uniform vec3 uSun; uniform float uTime; varying vec3 vN; varying vec3 vP; uniform vec3 uPa, uPb, uPc;");
   s = swap(s, "vec3 a = vec3(0.55, 0.25, 0.45), b = vec3(0.95, 0.55, 0.30), c = vec3(0.25, 0.20, 0.55);", "vec3 a = uPa, b = uPb, c = uPc;");
-  s = swap(s, 'S.ui.banner(`WAVE ${n}`,e?"CAPITAL SHIP INBOUND":"Hostiles inbound")', 'S.ui.banner(`WAVE ${n}`,e?"CAPITAL SHIP INBOUND":(S.$sk=$skyWave(n))?"Entering "+S.$sk:"Hostiles inbound")');
+  s = swap(s, 'S.ui.banner(`WAVE ${n}`,e?"CAPITAL SHIP INBOUND":"Hostiles inbound")', 'S.ui.banner(`WAVE ${n}`,e?"CAPITAL SHIP INBOUND":(S.$sk=$skyWave(S,n))?"Entering "+S.$sk:"Hostiles inbound")');
+  // power-matched difficulty (scale.js): boss HP from the player's DPS and health; after wave 10 enemy HP and damage keep pace with upgrades
+  s = swap(s, "function yn(n,e,t,i={}){", fs.readFileSync(__dirname + "/scale.js", "utf8") + "\nfunction yn(n,e,t,i={}){e===n.player&&(t*=$eDmg(n));");
+  s = swap(s, "spawnEnemy(n,e,t,i){return Yo(S,n,e,t,i)}", "spawnEnemy(n,e,t,i){return Yo(S,n,e,t,$eHp(S,i??1))}");
+  // after wave 10 enemies arrive in packs of 10-12 around one point every 4 s (sooner if the field is clear), held while 30+ are alive
+  s = swap(s, "if(e.spawnTimer-=t,e.spawnTimer<=0)", "if(e.spawnTimer-=t,e.wave>10&&e.spawnTimer>.6&&!n.enemies.some(i=>!i.dead&&!i.custom)&&(e.spawnTimer=.6),e.spawnTimer<=0)");
+  s = swap(s, "let i=e.queue.shift(),s=N_(n);for(let r=0;r<i.n;r++)n.spawnEnemy(i.kind,s.x+r%2*40-20,s.z+r*30,e.comp.hpScale);e.spawnTimer=e.comp.boss?5:e.wave>20?.35:.6",
+    "let P=e.wave>10&&!e.comp.boss;if(P&&n.enemies.filter(i=>!i.dead&&!i.custom).length>=30)e.spawnTimer=.5;else{let k=P?Math.min(e.queue.length,10+Math.floor(Math.random()*3)):1,s=N_(n);for(let j=0;j<k;j++){let i=e.queue.shift(),a=j/k*6.283,d=j?90+Math.random()*70:0;for(let r=0;r<i.n;r++)n.spawnEnemy(i.kind,s.x+Math.cos(a)*d+r%2*40-20,s.z+Math.sin(a)*d+r*30,e.comp.hpScale)}e.spawnTimer=e.comp.boss?5:P?4:.6}");
+  // boss waves end with the boss: once it's dead its leftover minions are destroyed too
+  s = swap(s, 'else n.enemies.some(i=>!i.dead)||(e.state="break"', 'else e.comp.boss&&!n.enemies.some(i=>i.boss&&!i.dead)&&n.enemies.forEach(i=>i.dead||i.custom||yn(n,i,1e9,{silent:!0})),n.enemies.some(i=>!i.dead)||(e.state="break"');
+  s = swap(s, "onWaveStart(n,e){S.waveLabel", "onWaveStart(n,e){n<=10&&($ref=null),n===10&&$refAt(S),S.waveLabel");
   // dev/cheat menu: only when the game runs from a local file, or in a browser unlocked once with ?dev=<code>
   // (only the code's SHA-256 is in the page; a static site can't truly lock it, but cheats only touch the local save)
   s = swap(s, "document.body.append(dv,tg);", '(async()=>{try{const q=new URLSearchParams(location.search).get("dev");if(q&&crypto.subtle){const h=[...new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(q)))].map(b=>b.toString(16).padStart(2,"0")).join("");if(h==="bed21b3fe237cf8d852c5ba65621e732763e0c7b4232dbb134b19e1e3794f542")localStorage.setItem("vbDev","1");history.replaceState(null,"",location.pathname)}return location.protocol==="file:"||localStorage.getItem("vbDev")==="1"}catch(x){return location.protocol==="file:"}})().then(ok=>ok&&document.body.append(dv,tg));');
