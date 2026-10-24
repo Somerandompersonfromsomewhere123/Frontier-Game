@@ -204,8 +204,19 @@ const swap = (s, a, b) => {
   // every 10th wave cleared plays a hyperspace jump screen that switches sector
   const skyImg = [];
   for (const f of ["Blueeee.jpg", "milkyway.jpg", "exploring-the-mesmerizing-beauty-of-a-cosmic-nebula-illuminated-by-vibrant-orange-and-yellow-hues-in-deep-space-photo.jpg", "Red galaxy.jpg"])
-    skyImg.push((await sharp(DIR + "/" + f).resize(1280, 1280, { fit: "inside", withoutEnlargement: true }).jpeg({ quality: 82 }).toBuffer()).toString("base64"));
-  s = swap(s, "function Tf(n,e,t){let i={uTime:{value:0},uCam:{value:new U}}", "var $SKYIMG=" + JSON.stringify(skyImg) + ";\n" + fs.readFileSync(__dirname + "/sky.js", "utf8") + "\nfunction Tf(n,e,t){let i={uTime:{value:0},uCam:{value:new U},...$skyU()}");
+    // 2K: small photos are upscaled (lanczos) and lightly sharpened to hide the softening
+    skyImg.push((await sharp(DIR + "/" + f).resize(2048, 2048, { fit: "inside", kernel: "lanczos3" }).sharpen({ sigma: 0.8 }).jpeg({ quality: 92, chromaSubsampling: "4:4:4", mozjpeg: true }).toBuffer()).toString("base64"));
+  s = swap(s, "function Tf(n,e,t){let i={uTime:{value:0},uCam:{value:new U}}", "var $SKYIMG=" + JSON.stringify(skyImg) + ";\n" + fs.readFileSync(__dirname + "/sky.js", "utf8") + fs.readFileSync(__dirname + "/cam.js", "utf8") + "\nfunction Tf(n,e,t){$camSel();let i={uTime:{value:0},uCam:{value:new U},...$skyU()}");
+  // Settings > Camera (cam.js): third-person chase camera; WASD and dash turn with it, the sky stretches to the horizon
+  s = swap(s, '<label for="setSens">', '<label for="setCam">Camera</label><select id="setCam"><option value="top">Top-down</option><option value="chase">Third person (behind the ship)</option></select>\n      <label for="setSens">');
+  s = swap(s, "let m=h+(f-h)*.18,y=d+(u-d)*.18,g=l.zoomTarget;", "let C=$chase(),m=C?h:h+(f-h)*.18,y=C?d:d+(u-d)*.18,g=l.zoomTarget;");
+  s = swap(s, "s.position.copy(yf).multiplyScalar(l.zoom).add(l.target);let E=", "$camRig(l,s,c,C),C||s.position.copy(yf).multiplyScalar(l.zoom).add(l.target);let E=");
+  s = swap(s, "l.shakeAmt*=Math.exp(-c*7),s.lookAt(l.target)}", "l.shakeAmt*=Math.exp(-c*7),s.lookAt(C?$camAt:l.target)}");
+  s = swap(s, "snap(c,h,d=1){", "snap(c,h,d=1){$camYaw=null;");
+  s = swap(s, "if(o>0&&(r/=o,a/=o,De.moved=!0),e.dashT>0)", "if(o>0&&(r/=o,a/=o,De.moved=!0),$camYaw!=null&&([r,a]=[-r*Math.sin($camYaw)-a*Math.cos($camYaw),r*Math.cos($camYaw)-a*Math.sin($camYaw)]),e.dashT>0)");
+  s = swap(s, "l.position.x=O.position.x,l.position.z=O.position.z,", "l.position.x=O.position.x,l.position.z=O.position.z,l.scale.setScalar($camSky),");
+  s = swap(s, "uniform vec3 uCam; uniform float uSize;", "uniform vec3 uCam; uniform float uSize; uniform vec3 uFwd;");
+  s = swap(s, "p.xz = uCam.xz + mod(p.xz - uCam.xz, uSize) - uSize * 0.5;", "vec2 c0 = uCam.xz + uFwd.xz * uSize * 0.45; p.xz = c0 + mod(p.xz - c0, uSize) - uSize * 0.5;");
   s = swap(s, "uniform float uTime; varying vec3 vW;", "uniform float uTime; varying vec3 vW; uniform vec3 uK0, uK1, uK2, uK3, uK4, uK5, uK6, uOff; uniform float uDim, uImg; uniform sampler2D uTex;");
   s = swap(s, "gl_FragColor = vec4(col, 1.0);", "if (uImg > 0.5) col = pow(texture2D(uTex, vW.xz / 9000.0 + uOff.xy).rgb, vec3(1.8)) * uDim * 0.6;\n        gl_FragColor = vec4(col, 1.0);");
   s = swap(s, '<label for="setShake">', '<label for="setMap">Galaxy map</label><select id="setMap"></select>\n      <label for="setShake">');
@@ -229,6 +240,10 @@ const swap = (s, a, b) => {
   // dev/cheat menu: only when the game runs from a local file, or in a browser unlocked once with ?dev=<code>
   // (only the code's SHA-256 is in the page; a static site can't truly lock it, but cheats only touch the local save)
   s = swap(s, "document.body.append(dv,tg);", '(async()=>{try{const q=new URLSearchParams(location.search).get("dev");if(q&&crypto.subtle){const h=[...new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(q)))].map(b=>b.toString(16).padStart(2,"0")).join("");if(h==="bed21b3fe237cf8d852c5ba65621e732763e0c7b4232dbb134b19e1e3794f542")localStorage.setItem("vbDev","1");history.replaceState(null,"",location.pathname)}return location.protocol==="file:"||localStorage.getItem("vbDev")==="1"}catch(x){return location.protocol==="file:"}})().then(ok=>ok&&document.body.append(dv,tg));');
+  // chase view: the nebula is read by view direction (a dome) instead of where the ray hits the flat plane, so it doesn't streak like a floor
+  s = swap(s, "uniform float uDim, uImg; uniform sampler2D uTex;\n      void main(){", "uniform float uDim, uImg, uSky; uniform sampler2D uTex;\n      void main(){\n        vec2 q = vW.xz; if (uSky > 0.5) { vec3 d = normalize(vW - cameraPosition); q = cameraPosition.xz * 0.3 + d.xz / (0.3 - d.y) * 5200.0; }");
+  s = swap(s, "vec3 p = vec3(vW.xz * 0.00018 + uOff.xy,", "vec3 p = vec3(q * 0.00018 + uOff.xy,");
+  s = swap(s, "texture2D(uTex, vW.xz / 9000.0 + uOff.xy)", "texture2D(uTex, q / 9000.0 + uOff.xy)");
   fs.writeFileSync(DST, s);
   console.log("wrote", (fs.statSync(DST).size / 1e6).toFixed(1), "MB");
 })().catch((e) => { console.error(e); process.exit(1); });

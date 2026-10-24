@@ -19,7 +19,7 @@ const $SKYT = [
 let $skyU_, $skyI = 0, $skyNext = 0, $skyAt = 1, $skyTex = [];
 function $skyU() {
   if ($skyU_) return $skyU_;
-  $skyU_ = { uDim: { value: 0 }, uOff: { value: new U() }, uImg: { value: 0 }, uTex: { value: null } };
+  $skyU_ = { uDim: { value: 0 }, uOff: { value: new U() }, uImg: { value: 0 }, uTex: { value: null }, uFwd: { value: new U() }, uSky: { value: 0 } };
   for (let k = 0; k < 7; k++) $skyU_["uK" + k] = { value: new U() };
   for (const k of ["uPa", "uPb", "uPc"]) $skyU_[k] = { value: new U() };
   // photo maps tile with mirrored repeat so the seams never show
