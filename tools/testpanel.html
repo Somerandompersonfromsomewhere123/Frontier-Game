@@ -1,0 +1,50 @@
+<!-- Local test panel: build3d.js adds this to GAME_TEST.html only (never to GAME.html / the website) -->
+<div id="vbtest" style="position:fixed;right:12px;top:50%;transform:translateY(-50%);z-index:9999;width:160px;padding:10px;display:flex;flex-direction:column;gap:6px;background:rgba(10,14,24,.88);border:1px solid #f5b72e;border-radius:6px;color:#fff;font:600 13px 'Barlow Semi Condensed',sans-serif;cursor:auto">
+  <b style="color:#f5b72e;letter-spacing:.12em">TEST PANEL</b>
+  <span id="vbtW" style="color:#9fe6ff">Not in a run</span>
+  <label>Wave <input id="vbtIn" type="number" min="1" value="11" style="width:64px"></label>
+  <button data-t="go">Go to wave [J]</button>
+  <button data-t="next">Next wave [N]</button>
+  <button data-t="sector">Next sector, +10 waves [M]</button>
+  <button data-t="kill">Kill all enemies [K]</button>
+  <label><input type="checkbox" id="vbtGod"> God mode [G]</label>
+  <small style="color:#aab">In a fight the game locks the mouse, so use the keys</small>
+</div>
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id), P = $("vbtest");
+  const kill = () => { for (const e of G.enemies) e.dead || G.applyDamage(e, 1e9, { silent: !0 }); };
+  // jumps run through the normal wave start, so the sector check, banners and boss intros all happen as in play
+  const go = (w) => {
+    if (!G.player || !G.director) return ($("vbtW").textContent = "Start a run first");
+    const D = G.director;
+    kill(); D.wave = Math.max(1, w | 0) - 1; D.state = "break"; D.timer = 0;
+  };
+  for (const ev of ["mousedown", "mouseup", "pointerup", "keydown"]) P.addEventListener(ev, (e) => e.stopPropagation());
+  const act = (t) => {
+    const w = G.director?.wave || 0;
+    if (t === "go") go(+$("vbtIn").value);
+    else if (t === "next") go(w + 1);
+    else if (t === "sector") go(Math.max(0, Math.floor((w - 1) / 10)) * 10 + 11);
+    else if (t === "kill" && G.player) kill();
+  };
+  // buttons act on pointerdown (the game captures the pointer on press); during play the pointer is locked, so keys do it
+  P.addEventListener("pointerdown", (e) => {
+    if (e.target.tagName === "INPUT") return setTimeout(() => e.target.focus());
+    e.target.dataset.t && (e.preventDefault(), act(e.target.dataset.t));
+  });
+  addEventListener("keydown", (e) => {
+    if (e.target.tagName === "INPUT" || e.repeat) return;
+    const t = { KeyN: "next", KeyM: "sector", KeyK: "kill" }[e.code];
+    if (t) act(t);
+    else if (e.code === "KeyG") $("vbtGod").checked = !$("vbtGod").checked;
+    else if (e.code === "KeyJ") e.preventDefault(), $("vbtIn").focus(), $("vbtIn").select(); // type the wave, Enter jumps (a prompt() would blur and pause the game)
+  }, !0);
+  $("vbtIn").addEventListener("keydown", (e) => e.key === "Enter" && (act("go"), e.target.blur()));
+  setInterval(() => {
+    const D = G.director, p = G.player;
+    $("vbtW").textContent = p && D ? `Wave ${D.wave} · ${D.state}` : "Not in a run";
+    if ($("vbtGod").checked && p) { p.hp = p.maxHp; p.shield = p.maxShield; }
+  }, 200);
+})();
+</script>

@@ -14,12 +14,32 @@ const SHIP = {
 };
 // same as $alien, but per ship, with emission maps, and the nose already turned to +X
 // textures load at startup; $M3OK tells the tree thumbnails (like $QOK) when they are ready
-const LOADER = `var $M3C={},$M3T={},$M3L=0,$M3N=0,$M3OK=!1;function $m3T(id){return $M3T[id]||=$M3[id].T.map(b=>{$M3N++;const t=new Pn,im=new Image;im.onload=()=>{t.image=im;t.needsUpdate=!0;++$M3L>=$M3N&&($M3OK=!0)};im.src="data:image/jpeg;base64,"+b;t.flipY=!1;t.wrapS=t.wrapT=1e3;t.anisotropy=8;return t})}for(const id in $M3)$m3T(id);function $m3(id){const D=$M3[id],d=He[id],S=84*(.9+.13*d.tier),col=Xt[d.cls].color,n=Zn(S*.4,col),e=n.body;if(!$M3C[id]){const T=$m3T(id);$M3C[id]=D.P.map(P=>{const b=Uint8Array.from(atob(P.b),c=>c.charCodeAt(0)).buffer,k=P.n,g=new kt,m=P.m;g.setAttribute("position",new Vt(new Float32Array(b,0,k*3),3));g.setAttribute("normal",new Vt(new Float32Array(b,k*12,k*3),3));g.setAttribute("uv",new Vt(new Float32Array(b,k*24,k*2),2));g.setIndex(new Vt(new Uint32Array(b,k*32,P.i),1));const o={color:new ge(m.bc[0],m.bc[1],m.bc[2]),metalness:m.me*.85,roughness:Math.max(.25,m.ro),envMapIntensity:.9,emissive:new ge(m.em[0],m.em[1],m.em[2]),emissiveIntensity:.8};if(m.map!=null){o.map=T[m.map];o.map.colorSpace="srgb"}if(m.mr!=null)o.metalnessMap=o.roughnessMap=T[m.mr];if(m.nm!=null)o.normalMap=T[m.nm];if(m.emm!=null){o.emissiveMap=T[m.emm];o.emissiveMap.colorSpace="srgb"}if(m.bl){o.transparent=!0;o.opacity=Math.max(.25,m.bc[3]);o.depthWrite=!1}return[g,new Qt(o)]})}const W=Math.max(D.mx[0]-D.mn[0],D.mx[2]-D.mn[2]),k=S/W,grp=new Mt;for(const[g,m]of $M3C[id])grp.add(new Pe(g,m));grp.scale.setScalar(k);grp.position.set(-(D.mx[0]+D.mn[0])/2*k,2-D.mx[1]*k,-(D.mx[2]+D.mn[2])/2*k);e.add(grp);for(const z of[-1,1])n.engines.push(ut(-S*.5,2-(D.mx[1]-D.mn[1])*k/2,z*S*.12));const H=D.H,dk=Lt(2896185,{panel:3}),gl=yt(col,2.6),Y=v=>2+v*S,P=d.primary,Q=d.secondary,usesGun=w=>w&&(w.kind==="pulse"||w.kind==="plasma"||w.kind==="missile"||w.kind==="rail"&&w.count>1);const gun=(x,y,z,len,r,a)=>{const g=new Mt;g.position.set(x,y,z);g.rotation.y=-a;q(new bt(r*2.2,r*2.6,r*1.6,8),dk,0,0,0,g);q(_t(r,r*.85,len,6),dk,len/2,r*1.4,0,g);q(new Rt(r*.9,6,4),gl,len,r*1.4,0,g);e.add(g);return ut(x+Math.cos(a)*len,y+r*1.4,z+Math.sin(a)*len)};n.nose=ut(H.nose[0]*S,Y(H.nose[1])+S*.01,0);q(new Rt(S*.014,8,6),gl,n.nose.x,n.nose.y,0,e);if(H.blades)for(const b of H.blades)for(const z of[1,-1])n.muzzles.push(gun(b[0]*S-S*.05,Y(b[2]),z*b[1]*S,S*.07,S*.01,0));else if(usesGun(P))for(const z of[1,-1])n.muzzles.push(gun(H.wing[0]*S,Y(H.wing[2]),z*H.wing[1]*S,S*.09,S*.012,0));else n.muzzles.push(n.nose.clone());if(H.blades)n.muzzles2=n.muzzles.map(m=>m.clone());else if(usesGun(Q))for(const z of[1,-1])n.muzzles2.push(gun(H.pod[0]*S,Y(H.pod[2]),z*H.pod[1]*S,S*.07,S*.011,0));else n.muzzles2.push(ut(n.nose.x*.95,n.nose.y,0));n.dirGuns=[];for(const w of[P,Q])for(const a of(w&&w.dirs)||[])if(a){const E=H.edge.at(Math.round(Wt(a)/(Math.PI*2)*16+16)%16);n.dirGuns.push({a,p:gun(E[0]*S*.96,Y(E[2]),E[1]*S*.96,S*.06,S*.011,a)})}for(const T of H.tur.slice(0,d.turrets||0)){const g=new Mt;g.position.set(T[0]*S,Y(T[2]),T[1]*S);q(new bt(S*.035,S*.042,S*.02,8),dk,0,0,0,g);q(Ke(S*.065,S*.03,S*.05,1),dk,S*.006,S*.022,0,g);for(const z of[1,-1])q(_t(S*.007,S*.006,S*.08,6),dk,S*.06,S*.024,z*S*.012,g);e.add(g);n.turrets.push(g)}return n}\n`;
+const LOADER = `var $M3C={},$M3T={},$M3L=0,$M3N=0,$M3OK=!1;function $m3T(id){return $M3T[id]||=$M3[id].T.map(b=>{$M3N++;const t=new Pn,im=new Image;im.onload=()=>{t.image=im;t.needsUpdate=!0;++$M3L>=$M3N&&($M3OK=!0)};im.src="data:image/jpeg;base64,"+b;t.flipY=!1;t.wrapS=t.wrapT=1e3;t.anisotropy=8;return t})}for(const id in $M3)$m3T(id);function $m3(id){const D=$M3[id],d=He[id],S=84*(.9+.13*d.tier),col=Xt[d.cls].color,n=Zn(S*.4,col),e=n.body;if(!$M3C[id]){const T=$m3T(id);$M3C[id]=D.P.map(P=>{const b=Uint8Array.from(atob(P.b),c=>c.charCodeAt(0)).buffer,k=P.n,g=new kt,m=P.m;g.setAttribute("position",new Vt(new Float32Array(b,0,k*3),3));g.setAttribute("normal",new Vt(new Int8Array(b,k*12,k*3),3,!0));const o2=k*12+(k*3+3&~3);g.setAttribute("uv",new Vt(new Float32Array(b,o2,k*2),2));g.setIndex(new Vt(k<65536?new Uint16Array(b,o2+k*8,P.i):new Uint32Array(b,o2+k*8,P.i),1));const o={color:new ge(m.bc[0],m.bc[1],m.bc[2]),metalness:m.me*.85,roughness:Math.max(.25,m.ro),envMapIntensity:.9,emissive:new ge(m.em[0],m.em[1],m.em[2]),emissiveIntensity:.8};if(m.map!=null){o.map=T[m.map];o.map.colorSpace="srgb"}if(m.mr!=null)o.metalnessMap=o.roughnessMap=T[m.mr];if(m.nm!=null)o.normalMap=T[m.nm];if(m.emm!=null){o.emissiveMap=T[m.emm];o.emissiveMap.colorSpace="srgb"}if(m.bl){o.transparent=!0;o.opacity=Math.max(.25,m.bc[3]);o.depthWrite=!1}return[g,new Qt(o)]})}const W=Math.max(D.mx[0]-D.mn[0],D.mx[2]-D.mn[2]),k=S/W,grp=new Mt;for(const[g,m]of $M3C[id])grp.add(new Pe(g,m));grp.scale.setScalar(k);grp.position.set(-(D.mx[0]+D.mn[0])/2*k,2-D.mx[1]*k,-(D.mx[2]+D.mn[2])/2*k);e.add(grp);for(const z of[-1,1])n.engines.push(ut(-S*.5,2-(D.mx[1]-D.mn[1])*k/2,z*S*.12));const H=D.H,dk=Lt(2896185,{panel:3}),gl=yt(col,2.6),Y=v=>2+v*S,P=d.primary,Q=d.secondary,usesGun=w=>w&&(w.kind==="pulse"||w.kind==="plasma"||w.kind==="missile"||w.kind==="rail"&&w.count>1);const gun=(x,y,z,len,r,a)=>{const g=new Mt;g.position.set(x,y,z);g.rotation.y=-a;q(new bt(r*2.2,r*2.6,r*1.6,8),dk,0,0,0,g);q(_t(r,r*.85,len,6),dk,len/2,r*1.4,0,g);q(new Rt(r*.9,6,4),gl,len,r*1.4,0,g);e.add(g);return ut(x+Math.cos(a)*len,y+r*1.4,z+Math.sin(a)*len)};n.nose=ut(H.nose[0]*S,Y(H.nose[1])+S*.01,0);q(new Rt(S*.014,8,6),gl,n.nose.x,n.nose.y,0,e);if(H.blades)for(const b of H.blades)for(const z of[1,-1])n.muzzles.push(gun(b[0]*S-S*.05,Y(b[2]),z*b[1]*S,S*.07,S*.01,0));else if(usesGun(P))for(const z of[1,-1])n.muzzles.push(gun(H.wing[0]*S,Y(H.wing[2]),z*H.wing[1]*S,S*.09,S*.012,0));else n.muzzles.push(n.nose.clone());if(H.blades)n.muzzles2=n.muzzles.map(m=>m.clone());else if(usesGun(Q))for(const z of[1,-1])n.muzzles2.push(gun(H.pod[0]*S,Y(H.pod[2]),z*H.pod[1]*S,S*.07,S*.011,0));else n.muzzles2.push(ut(n.nose.x*.95,n.nose.y,0));n.dirGuns=[];for(const w of[P,Q])for(const a of(w&&w.dirs)||[])if(a){const E=H.edge.at(Math.round(Wt(a)/(Math.PI*2)*16+16)%16);n.dirGuns.push({a,p:gun(E[0]*S*.96,Y(E[2]),E[1]*S*.96,S*.06,S*.011,a)})}for(const T of H.tur.slice(0,d.turrets||0)){const g=new Mt;g.position.set(T[0]*S,Y(T[2]),T[1]*S);q(new bt(S*.035,S*.042,S*.02,8),dk,0,0,0,g);q(Ke(S*.065,S*.03,S*.05,1),dk,S*.006,S*.022,0,g);for(const z of[1,-1])q(_t(S*.007,S*.006,S*.08,6),dk,S*.06,S*.024,z*S*.012,g);e.add(g);n.turrets.push(g)}return n}\n`;
 
 // class colours from the game's Xt table; grey hull metal stays, coloured panels and glows take the class hue
 const CLASS = { reaper: "assault", valkyrie: "assault", colossus: "heavy", titan: "heavy", railbreaker: "sniper", spectre: "sniper", mothership: "drone", overseer: "drone", hellfire: "missile", armageddon: "missile", wraith: "energy", nova: "energy", singularity: "energy", valkyrieprime: "assault" };
 const HEX = { assault: 0x38f6ff, heavy: 0xffa63d, sniper: 0x5b9bff, drone: 0xc06bff, missile: 0xff6a3d, energy: 0x3fd2c7 };
 const sharp = require(__dirname + "/pp/node_modules/sharp");
+const { execFileSync } = require("child_process"), FF = require(__dirname + "/pp/node_modules/ffmpeg-static");
+// audio -> base64 mp3 (plays everywhere, unlike ogg in Safari)
+const mp3 = (file, ...args) => execFileSync(FF, ["-v", "error", "-i", file, ...args, "-f", "mp3", "pipe:1"], { maxBuffer: 1 << 27 }).toString("base64");
+// mesh buffers shrink ~35%: normals become normalized int8 and indices uint16 when they fit; positions and uvs stay float32
+// layout: pos f32 n*3 | nrm i8 n*3 (padded to 4) | uv f32 n*2 | idx u16/u32 (decoded by the $m3 loader)
+function compact(M) {
+  const out = {};
+  for (const [id, D] of Object.entries(M)) out[id] = { ...D, P: D.P.map((p) => {
+    const n = p.n, buf = Buffer.from(p.b, "base64"), raw = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.length);
+    const f = new Float32Array(raw, 0, n * 8), ix = new Uint32Array(raw, n * 32, p.i), o2 = n * 12 + ((n * 3 + 3) & ~3), w = n < 65536 ? 2 : 4;
+    const b = Buffer.alloc(o2 + n * 8 + p.i * w);
+    new Float32Array(b.buffer, b.byteOffset, n * 3).set(f.subarray(0, n * 3));
+    const nb = new Int8Array(b.buffer, b.byteOffset + n * 12, n * 3);
+    for (let k = 0; k < n * 3; k++) nb[k] = Math.round(Math.max(-1, Math.min(1, f[n * 3 + k])) * 127);
+    new Float32Array(b.buffer, b.byteOffset + o2, n * 2).set(f.subarray(n * 6, n * 8));
+    new (w === 2 ? Uint16Array : Uint32Array)(b.buffer, b.byteOffset + o2 + n * 8, p.i).set(ix);
+    return { ...p, b: b.toString("base64") };
+  }) };
+  return out;
+}
 const hueOf = (c) => { const r = (c >> 16) / 255, g = ((c >> 8) & 255) / 255, b = (c & 255) / 255, mx = Math.max(r, g, b), d = mx - Math.min(r, g, b); return d === 0 ? 0 : mx === r ? ((g - b) / d + 6) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; };
 // hullTint: how far grey metal moves toward the class colour (0 = untouched)
 async function recolour(b64, hex, hue, minSat, hullTint) {
@@ -140,8 +160,16 @@ const swap = (s, a, b) => {
   const mb = LOADER.indexOf("if(!$M3C[id]){"), me = LOADER.indexOf("return[g,new Qt(o)]})}", mb) + "return[g,new Qt(o)]})}".length;
   if (mb < 0 || me < mb) throw new Error("loader material block not found");
   const loader = LOADER.slice(0, mb).replace("function $m3(id){", "function $m3M(id){const D=$M3[id];" + LOADER.slice(mb, me) + "return $M3C[id]}function $m3(id){") + "$m3M(id);" + LOADER.slice(me);
+  // sound (fx.js): the Kenney clips $SFXM uses, and music playlists: every tools/audio/music/<menu|battle|boss>_*.<audio> file
+  const SFXD = {}, MUSD = {}, KA = __dirname + "/audio/kenney/Audio", AM = __dirname + "/audio/music";
+  const used = /^(laserSmall|laserLarge|laserRetro|impactMetal|forceField|explosionCrunch|lowFrequency_explosion|thrusterFire)_\d+\.ogg$/;
+  for (const f of fs.readdirSync(KA).filter((f) => used.test(f))) SFXD[f.slice(0, -4)] = mp3(KA + "/" + f, "-ac", "1", "-b:a", "96k");
+  for (const k of ["menu", "battle", "boss"]) {
+    MUSD[k] = fs.readdirSync(AM).filter((f) => f.startsWith(k + "_")).sort().map((f) => mp3(AM + "/" + f, "-ac", "2", "-b:a", "80k"));
+    if (!MUSD[k].length) throw new Error("no music for " + k + " in " + AM);
+  }
   let s = fs.readFileSync(SRC, "utf8");
-  s = swap(s, "function ai(n){", "var $M3=" + JSON.stringify(M3) + ";\n" + loader + fs.readFileSync(__dirname + "/bosses.js", "utf8") + "\nfunction ai(n){");
+  s = swap(s, "function ai(n){", "var $M3=" + JSON.stringify(compact(M3)) + ";\n" + loader + fs.readFileSync(__dirname + "/bosses.js", "utf8") + "\nfunction ai(n){");
   // bosses: rotate the roster on boss waves, run the generic boss loop, name it in the HUD
   s = swap(s, "spawnBoss(n){return Up(S,n)}", "spawnBoss(n){return $spawnBoss(S,n)}");
   s = swap(s, "let t=n.boss;if(!t)return;", "let t=n.boss;if(!t)return;if(t.gb)return $gbU(n,t,e);");
@@ -196,7 +224,7 @@ const swap = (s, a, b) => {
   // Quaternius hulls (tiers 1-4, Starbreaker): engine pods removed (trail points stay), guns on hardpoints measured from each hull ($QH)
   s = swap(s, "for(const z of[-1,1])Nt(e,-S*.5,0,z*W*.12,S*.04,col,S*.14,n);", "const $hy=(D.mx[1]-D.mn[1])*k;for(const z of[-1,1])n.engines.push(ut(-S*.5,2-$hy/2,z*W*.12));");
   s = swap(s, "n.muzzles.push(ut(S*.45,0,W*.15),ut(S*.45,0,-W*.15));n.muzzles2.push(ut(S*.2,0,W*.3),ut(S*.2,0,-W*.3));return n}", "$armQ(n,id,S,$QH[nm]);return n}");
-  s = swap(s, "function ai(n){if(n===\"sovereign\")", "var $QH=" + JSON.stringify(qHardpoints(s)) + ";\n" + fs.readFileSync(__dirname + "/ships.js", "utf8") + "\nfunction ai(n){if(n===\"starcore\")return $starcore(n);if(n===\"tempest\")return $tempest(n);if(n===\"sovereign\")");
+  s = swap(s, "function ai(n){if(n===\"sovereign\")", "var $QH=" + JSON.stringify(qHardpoints(s)) + ";\n" + fs.readFileSync(__dirname + "/ships.js", "utf8") + "\nvar $SFXD=" + JSON.stringify(SFXD) + ",$MUSD=" + JSON.stringify(MUSD) + ";\n" + fs.readFileSync(__dirname + "/fx.js", "utf8") + "\nfunction ai(n){if(n===\"starcore\")return $starcore(n);if(n===\"tempest\")return $tempest(n);if(n===\"sovereign\")");
   // Starbreaker becomes the sniper apex; its old warship kit moves to the new Starcore; Tempest joins the Viper line
   const sb0 = s.indexOf('nt("starbreaker"'), sb1 = s.indexOf(',nt("sovereign"', sb0), oldSB = s.slice(sb0, sb1);
   if (sb0 < 0 || sb1 < 0 || !oldSB.includes('"Apex warship. Six-way')) throw new Error("starbreaker def not found");
@@ -208,7 +236,7 @@ const swap = (s, a, b) => {
   // Afterimage: ability entry, its cast, the clone update in the zone loop, and enemies aiming at live clones
   s = swap(s, 'phaseshift:{name:"Phase Shift"', 'afterimage:{name:"Afterimage",cost:50,cd:8,desc:"Dash toward the cursor, leaving 2 decoy clones that draw enemy fire, then explode."},phaseshift:{name:"Phase Shift"');
   s = swap(s, 'phaseshift(n,M,w){', 'afterimage(n,M,w){$afterimage(n,M,w)}, phaseshift(n,M,w){');
-  s = swap(s, 'else if(z.k==="decoy"){', 'else if(z.k==="after"){$afterU(n,z,t)&&$Z.splice(i,1)}else if(z.k==="halo"){$haloU(n,z,t)&&$Z.splice(i,1)}else if(z.k==="decoy"){');
+  s = swap(s, 'else if(z.k==="decoy"){', 'else if(z.k==="after"){$afterU(n,z,t)&&$Z.splice(i,1)}else if(z.k==="halo"){$haloU(n,z,t)&&$Z.splice(i,1)}else if(z.k==="chunk"){$chunkU(n,z,t)&&$Z.splice(i,1)}else if(z.k==="pop"){$popU(n,z,t)&&$Z.splice(i,1)}else if(z.k==="decoy"){');
   s = swap(s, 'r<i&&(i=r,t=s)}return t}function Lp(', 'r<i&&(i=r,t=s)}for(let s of $AI){let r=Math.hypot(s.x-e.x,s.z-e.z)*.4;r<i&&(i=r,t=s)}return t}function Lp(');
   s = swap(s, '"starbreaker": ["Zenith", "Zenith_Orange"]', '"starbreaker": ["Zenith", "Zenith_Green"]');
   s = swap(s, 'n==="starbreaker"&&t.push(', '(n==="starbreaker"||n==="starcore"||n==="tempest"||n==="valkyrieprime")&&t.push(');
@@ -219,12 +247,31 @@ const swap = (s, a, b) => {
   s = swap(s, '(e.dashT>0?2:0))*m;', '(e.dashT>0?2:0)+(e.$bo?1.8:0))*m;');
   s = swap(s, 'let _=n.arsenal.droneCount();', '$v3Hud(m,E);let _=n.arsenal.droneCount();');
   s = swap(s, '<div class="slot hidden" id="slotDrones">', '<div class="slot hidden" id="slotHalo"><kbd>F</kbd><span class="wname">Halo Breaker</span><div class="cd"></div></div>\n    <div class="slot hidden" id="slotBoost"><kbd>Shift</kbd><span class="wname">Boost</span><div class="cd"></div></div>\n    <div class="slot hidden" id="slotDrones">');
+  // fx.js hooks: sampled sound in play(), music replaces the ambient drone, wrecks on enemy death, knockback on every hit,
+  // momentum exchange when ramming, rock-on-rock collisions; the decoy's shots used a projectile kind the pool doesn't have
+  s = swap(s, "V_[n](H_(i,r),s)", "{let o=H_(i,r);$sfx(n,o,s)||V_[n](o,s)}");
+  s = swap(s, "ambient(n,e=0){if(ht){", "ambient(n,e=0){if(ht&&!(n&&$musicVol()>0)){");
+  s = swap(s, "function PM(n,e){let t=this,i=t.def,s=i.r/22;", "function PM(n,e){let t=this,i=t.def,s=i.r/22;$wreck(n,t,s);");
+  s = swap(s, "function yn(n,e,t,i={}){", "function yn(n,e,t,i={}){const $d=$yn0(n,e,t,i);$d>0&&$kick(n,e,$d,i);return $d}function $yn0(n,e,t,i={}){");
+  s = swap(s, "a>0&&(e.x+=i/r*a*.6,e.z+=s/r*a*.6,t.x-=i/r*a*.4,t.z-=s/r*a*.4,", "a>0&&($bump(e,t,i/r,s/r),e.x+=i/r*a*.6,e.z+=s/r*a*.6,t.x-=i/r*a*.4,t.z-=s/r*a*.4,");
+  s = swap(s, "function eu(n,e){", "function eu(n,e){$rockPhys(n);");
+  s = swap(s, "S.fx.clear(),S.player&&(S.scene.remove(S.player.model.root)", "S.fx.clear(),$fxClear(S),S.player&&(S.scene.remove(S.player.model.root)");
+  s = swap(s, 'n.weapons.spawn({kind:"pulse",team:"player",x:z.x,z:z.z,angle:xt(z.x,z.z,b.x,b.z)', 'n.weapons.spawn({kind:"bolt",team:"player",x:z.x,z:z.z,angle:xt(z.x,z.z,b.x,b.z)');
+  s = swap(s, '<input id="setVol" type="range" min="0" max="1" step="0.05">', '<input id="setVol" type="range" min="0" max="1" step="0.05">\n      <label for="setMusic">Music <span id="musVal"></span></label><input id="setMusic" type="range" min="0" max="1" step="0.05">');
+  // class shot styles (fx.js $ctc/$ptrail/$pimpact): the projectile pool carries fx (class) and tier from the weapon
+  s = swap(s, "push:v.push,pierce:v.pierce,ricochet:v.ricochet,frags:v.frags,st:v.st})", "push:v.push,pierce:v.pierce,ricochet:v.ricochet,frags:v.frags,st:v.st,fx:v.fx,tier:v.tier})");
+  s = swap(s, "noCollide:!!x.noCollide,hits:null}", "noCollide:!!x.noCollide,hits:null,fx:x.fx||null,tier:x.tier||0}");
+  s = swap(s, "let L=_.x,z=_.z;if(_.x+=_.vx*x,_.z+=_.vz*x,_.noCollide)", "_.fx&&$ptrail(e,_,x);let L=_.x,z=_.z;if(_.x+=_.vx*x,_.z+=_.vz*x,_.noCollide)");
+  s = swap(s, "function g(x,v,P,_){let L={", "function g(x,v,P,_){x.fx&&$pimpact(e,x,P,_);let L={");
+  // Nova Burst and Vortex Orbs fly a little faster (Vortex keeps roughly its old reach)
+  s = swap(s, 'name:"Nova Burst",cooldown:.66,dmg:60,zap:30,zapRange:160,speed:320', 'name:"Nova Burst",cooldown:.66,dmg:60,zap:30,zapRange:160,speed:420');
+  s = swap(s, 'vortex:260,speed:220,life:3.6', 'vortex:260,speed:290,life:3');
   // gentler bank when strafing with A/D: tilt capped at ~17 degrees instead of ~43
   s = swap(s, "f=Math.max(-.75,Math.min(.75,c*.06+h*.0016));", "f=Math.max(-.3,Math.min(.3,c*.03+h*.0007));");
   // shot colour climbs a rarity ladder with tier, so stronger ships read as stronger: green, cyan, blue, purple, pink, orange, red
-  s = swap(s, "function Gh(n,e,t,i){", "var $TC=[0,6094714,3729663,5078527,11754751,16732120,16752688,16726072];function $tc(w,t){return w&&/^(pulse|plasma|rail|beam|chain|orb)$/.test(w.kind)?{...w,color:$TC[t]}:w}function Gh(n,e,t,i){");
+  s = swap(s, "function Gh(n,e,t,i){", "var $TC=[0,6094714,3729663,5078527,11754751,16732120,16752688,16726072];function $tc(w,t,c){return $ctc(w,t,c)}function Gh(n,e,t,i){");
   s = swap(s, "primary:Gh(i.primary,", "primary:$tc(Gh(i.primary,");
-  s = swap(s, ",(1+.05*r.primary)*l,1),secondary:Gh(i.secondary,(1+.12*r.secondary)*o,l,1-.06*r.secondary),", ",(1+.05*r.primary)*l,1),i.tier),secondary:$tc(Gh(i.secondary,(1+.12*r.secondary)*o,l,1-.06*r.secondary),i.tier),");
+  s = swap(s, ",(1+.05*r.primary)*l,1),secondary:Gh(i.secondary,(1+.12*r.secondary)*o,l,1-.06*r.secondary),", ",(1+.05*r.primary)*l,1),i.tier,i.cls),secondary:$tc(Gh(i.secondary,(1+.12*r.secondary)*o,l,1-.06*r.secondary),i.tier,i.cls),");
   s = swap(s, '["Tier 5-6 ship art","Original concept art by the Voidbreakers developer",""]', '["Tier 5-6 ship models","\\u201cProteron Ships\\u201d and \\u201cSpace Ships\\u201d by Viktor Hahn (CC BY 4.0)","https://v-ktor.itch.io/space-ships"]');
   // sectors (sky.js): nebula and planet colours become uniforms; the user's galaxy photos are embedded as sky maps ($SKYIMG);
   // every 10th wave cleared plays a hyperspace jump screen that switches sector
@@ -240,7 +287,7 @@ const swap = (s, a, b) => {
     const { width: w, height: h } = await sharp(MAPS + "/" + f).metadata();
     const ex = { left: Math.round(w * t[3]), top: Math.round(h * t[0]), width: Math.round(w * (1 - t[1] - t[3])), height: Math.round(h * (1 - t[0] - t[2])) };
     // 2K: small photos are upscaled (lanczos) and lightly sharpened to hide the softening
-    skyImg.push((await sharp(MAPS + "/" + f).extract(ex).resize(2048, 2048, { fit: "inside", kernel: "lanczos3" }).sharpen({ sigma: 0.8 }).jpeg({ quality: 92, chromaSubsampling: "4:4:4", mozjpeg: true }).toBuffer()).toString("base64"));
+    skyImg.push((await sharp(MAPS + "/" + f).extract(ex).resize(2048, 2048, { fit: "inside", kernel: "lanczos3" }).sharpen({ sigma: 0.8 }).jpeg({ quality: 86, mozjpeg: true }).toBuffer()).toString("base64"));
   }
   s = swap(s, "function Tf(n,e,t){let i={uTime:{value:0},uCam:{value:new U}}", "var $SKYIMG=" + JSON.stringify(skyImg) + ";\n" + fs.readFileSync(__dirname + "/sky.js", "utf8") + fs.readFileSync(__dirname + "/cam.js", "utf8") + "\nfunction Tf(n,e,t){$camSel();let i={uTime:{value:0},uCam:{value:new U},...$skyU()}");
   // Settings > Camera (cam.js): third-person chase camera; WASD and dash turn with it, the sky stretches to the horizon
@@ -262,7 +309,7 @@ const swap = (s, a, b) => {
   s = swap(s, "col = pow(col, vec3(1.12)) * 0.6;", "col = pow(col, vec3(1.12)) * uDim;");
   s = swap(s, "uniform vec3 uSun; uniform float uTime; varying vec3 vN; varying vec3 vP;", "uniform vec3 uSun; uniform float uTime; varying vec3 vN; varying vec3 vP; uniform vec3 uPa, uPb, uPc;");
   s = swap(s, "vec3 a = vec3(0.55, 0.25, 0.45), b = vec3(0.95, 0.55, 0.30), c = vec3(0.25, 0.20, 0.55);", "vec3 a = uPa, b = uPb, c = uPc;");
-  s = swap(s, 'S.ui.banner(`WAVE ${n}`,e?"CAPITAL SHIP INBOUND":"Hostiles inbound")', 'S.ui.banner(`WAVE ${n}`,e?"CAPITAL SHIP INBOUND":(S.$sk=$skyWave(S,n))?"Entering "+S.$sk:"Hostiles inbound")');
+  s = swap(s, 'S.ui.banner(`WAVE ${n}`,e?"CAPITAL SHIP INBOUND":"Hostiles inbound")', 'S.ui.banner(`WAVE ${n}`,(S.$sk=$skyWave(S,n),e)?"CAPITAL SHIP INBOUND":S.$sk?"Entering "+S.$sk:"Hostiles inbound")');
   // power-matched difficulty (scale.js): boss HP from the player's DPS and health; after wave 10 enemy HP and damage keep pace with upgrades
   s = swap(s, "function yn(n,e,t,i={}){", fs.readFileSync(__dirname + "/scale.js", "utf8") + "\nfunction yn(n,e,t,i={}){e===n.player&&(t*=$eDmg(n));");
   s = swap(s, "spawnEnemy(n,e,t,i){return Yo(S,n,e,t,i)}", "spawnEnemy(n,e,t,i){return Yo(S,n,e,t,$eHp(S,i??1))}");
@@ -281,5 +328,8 @@ const swap = (s, a, b) => {
   s = swap(s, "vec3 p = vec3(vW.xz * 0.00018 + uOff.xy,", "vec3 p = vec3(q * 0.00018 + uOff.xy,");
   s = swap(s, "texture2D(uTex, vW.xz / 9000.0 + uOff.xy)", "texture2D(uTex, q / 9000.0 + uOff.xy)");
   fs.writeFileSync(DST, s);
+  // local test copy with the wave panel (testpanel.html); not published
+  const end = s.lastIndexOf("</body>");
+  fs.writeFileSync(__dirname + "/../GAME_TEST.html", s.slice(0, end) + fs.readFileSync(__dirname + "/testpanel.html", "utf8") + s.slice(end));
   console.log("wrote", (fs.statSync(DST).size / 1e6).toFixed(1), "MB");
 })().catch((e) => { console.error(e); process.exit(1); });

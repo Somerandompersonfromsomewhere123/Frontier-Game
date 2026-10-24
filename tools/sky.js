@@ -21,7 +21,7 @@ const $SKYT = [
   ["Toxic Bloom", [[.004, .008, .002], [.18, .02, .20], [.05, .20, .04], [.55, .05, .45], [.30, .60, .05], [.75, .95, .10], [.95, .40, .90]], .55, [[.50, .70, .15], [.90, .40, .80], [.25, .10, .30]]],
   ["Ember Void", [[.003, .002, .002], [.08, .03, .02], [.03, .02, .04], [.35, .08, .02], [.10, .04, .08], [.95, .35, .05], [1, .55, .20]], .5, [[.40, .15, .08], [.90, .45, .15], [.15, .06, .06]]],
 ];
-let $skyU_, $skyI = 0, $skyNext = 0, $skyAt = 1, $skyTex = [];
+let $skyU_, $skyI = 0, $skyNext = 0, $skyAt = 0, $skyTex = []; // $skyAt: the 10-wave block (0 = waves 1-10) whose sector is showing
 function $skyU() {
   if ($skyU_) return $skyU_;
   $skyU_ = { uDim: { value: 0 }, uOff: { value: new U() }, uImg: { value: 0 }, uTex: { value: null }, uFwd: { value: new U() }, uSky: { value: 0 } };
@@ -62,22 +62,22 @@ function $skyJump(S, w) {
   if ($skyMap() >= 0) return;
   const i = $skyFor(w), d = document.createElement("div");
   $skyNext = i;
-  $skyAt = w;
+  $skyAt = Math.floor((w - 1) / 10);
   d.id = "vbjump";
-  d.innerHTML = `<div class="st"></div><div class="tx"><small>Hyperspace jump · waves ${w}-${w + 9}</small><b>SECTOR ${Math.floor((w - 1) / 10) + 1}</b><span>${$SKYT[i][0]}</span></div>`;
+  d.innerHTML = `<div class="st"></div><div class="tx"><small>Hyperspace jump · waves ${$skyAt * 10 + 1}-${$skyAt * 10 + 10}</small><b>SECTOR ${Math.floor((w - 1) / 10) + 1}</b><span>${$SKYT[i][0]}</span></div>`;
   document.body.append(d);
   try { S.audio.play("charge"); } catch (x) {}
   setTimeout(() => { $skyShow(i); try { S.audio.play("explodeBig"); } catch (x) {} }, 1100);
   setTimeout(() => d.remove(), 3800);
 }
-// wave start: wave 1 resets to home; a sector wave that skipped the jump (e.g. a dev jump) jumps now
+// wave start: wave 1 resets to home; any wave whose 10-wave block isn't the one showing (a skipped jump, a dev or test wave jump) jumps now
 function $skyWave(S, w) {
   if (!$skyU_) return "";
   const f = $skyMap();
   if (f >= 0) { $skyI !== f && $skyShow(f); return ""; }
-  if (w <= 1) { $skyAt = 1; $skyNext = 0; $skyShow(0); return ""; }
-  if (w % 10 !== 1) return "";
-  $skyAt !== w && $skyJump(S, w);
+  if (w <= 1) { $skyAt = 0; $skyNext = 0; $skyShow(0); return ""; }
+  if (Math.floor((w - 1) / 10) === $skyAt) return "";
+  $skyJump(S, w);
   return $SKYT[$skyNext][0]; // the sky itself swaps a moment later, under the jump screen
 }
 {

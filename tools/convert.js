@@ -7,7 +7,7 @@ const { NodeIO } = require(__dirname + "/pp/node_modules/@gltf-transform/core");
 const DL = __dirname + "/models", OUT = __dirname + "/models";
 const TEX = 1024;
 
-const jpg = async (buf) => (await sharp(buf).resize(TEX, TEX, { fit: "fill" }).flatten({ background: "#000" }).jpeg({ quality: 88 }).toBuffer()).toString("base64");
+const jpg = async (buf) => (await sharp(buf).resize(TEX, TEX, { fit: "fill" }).flatten({ background: "#000" }).jpeg({ quality: 82, mozjpeg: true }).toBuffer()).toString("base64");
 // glTF packs roughness in G and metalness in B; OBJ ships have them as two greyscale files
 async function packMR(roughFile, metalFile) {
   const r = await sharp(roughFile).resize(TEX, TEX, { fit: "fill" }).greyscale().raw().toBuffer();
